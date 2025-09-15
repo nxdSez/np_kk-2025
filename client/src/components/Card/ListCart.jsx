@@ -57,7 +57,7 @@ const ListCart = () => {
                       )}
                       <div>
                         <p className="font-bold">{item.title}</p>
-                        <p className="text-sm">{item.price} x {item.count}</p>
+                        <p className="text-sm">{numberFormat(item.price)} x {item.count}</p>
                       </div>
                     </div>
                     <div className="font-bold text-blue-500">
@@ -85,7 +85,8 @@ const ListCart = () => {
                 user
                 ? <Link>
                 <button
-                className="bg-red-500 w-full py-2 rounded-md text-white font-bold hover:bg-red-600"
+                disabled={cart.length < 1}
+                className="bg-blue-500 w-full py-2 rounded-md text-white font-bold hover:bg-blue-600"
                 onClick={handleCheckout}
                 >
                   สั่งซื้อ

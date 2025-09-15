@@ -13,6 +13,13 @@ const npStore = (set, get) => ({
   categories: [],
   carts: [],
 
+  LogOut: () => {
+    set({
+      user: null,
+      token: null,
+      carts: [],
+    })
+  },
   actionAddtoCart: (product) => {
     const carts = get().carts;
     const updateCart = [...carts, { ...product, count: 1 }];

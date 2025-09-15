@@ -1,9 +1,11 @@
 import React from "react";
+import ContentCarousel from "../components/Home/ContentCarousel";
 
 const Home = () => {
   return (
     <div>
-      <h1 className="text-3xl font-bold underline">Home Page</h1>
+      <p className="text-xl text-center font-bold">สินค้าโปรโมชั่น</p>
+      <ContentCarousel />
     </div>
   );
 };

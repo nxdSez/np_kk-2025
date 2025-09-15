@@ -4,6 +4,8 @@ import { createProduct, deleteProduct } from "../../api/Product";
 import { toast } from "react-toastify";
 import Uploadfile from "./Uploadfile";
 import { Link } from "react-router-dom";
+import { numberFormat } from "../../utils/number";
+import { dateFormat } from "../../utils/dateformat";
 
 const initialState = {
   title: "title",
@@ -193,10 +195,10 @@ const FormProduct = () => {
                 </td>
                 <td className="text-center">{item.title}</td>
                 <td className="text-center">{item.description}</td>
-                <td className="text-center">{item.price}</td>
+                <td className="text-center">{numberFormat(item.price)}</td>
                 <td className="text-center">{item.quantity}</td>
                 <td className="text-center">{item.sold}</td>
-                <td className="text-xs text-gray-500">{item.updatedAt}</td>
+                <td className="text-xs text-gray-500">{dateFormat(item.updatedAt)}</td>
                 <td>
                   <div className="flex flex-col gap-2 items-center">
                     <Link

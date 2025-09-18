@@ -49,14 +49,13 @@ model Order {
   id              Int            @id @default(autoincrement())
   cartTotal       Float
   products        ProductOrder[]
-  orderStatus     String         @default("Not Process")
-  orderedBy       User           @relation(fields: [orderedById], references: [id])
-  orderedById     Int
+  orderStatus     String         @default("รอตรวจสอบ")
+  orderedBy       User           @relation(fields: [customerId], references: [id])
+  customerId      Int
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   stripePaymentId String
   amount          Float
-  currency        String
   status          String
 }
 
@@ -79,13 +78,13 @@ model Category {
 }
 
 model Cart {
-  id          Int           @id @default(autoincrement())
-  products    ProductCart[]
-  cartTotal   Float
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  orderedBy   User          @relation(fields: [orderedById], references: [id])
-  orderedById Int
+  id         Int           @id @default(autoincrement())
+  products   ProductCart[]
+  cartTotal  Float
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  orderedBy  User          @relation(fields: [customerId], references: [id])
+  customerId Int
 }
 
 model ProductCart {

@@ -50,8 +50,8 @@ model Order {
   cartTotal       Float
   products        ProductOrder[]
   orderStatus     String         @default("รอตรวจสอบ")
-  orderedBy       User           @relation(fields: [customerId], references: [id])
-  customerId      Int            @default(1)
+  orderedBy       User?          @relation(fields: [customerId], references: [id])
+  customerId      Int?           @default(1)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   stripePaymentId String
@@ -83,8 +83,8 @@ model Cart {
   cartTotal  Float
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
-  orderedBy  User          @relation(fields: [customerId], references: [id])
-  customerId Int           @default(1)
+  orderedBy  User?         @relation(fields: [customerId], references: [id])
+  customerId Int?          @default(1)
 }
 
 model ProductCart {

@@ -1,138 +1,156 @@
+// rafce
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import React, { useState } from "react";
 import { toast } from "react-toastify";
-import { Link } from "react-router-dom";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import zxcvbn from "zxcvbn";
+import { useForm } from "react-hook-form";
 
-const Register = () => {
-  //Java Script
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
+const registerSchema = z
+  .object({
+    email: z.string().email({ message: "Invalid email!!!" }),
+    password: z.string().min(8, { message: "Password ต้องมากกว่า 8 ตัวอักษร" }),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Password มันบ่ตรงกันเด้อ",
+    path: ["confirmPassword"],
   });
 
-  const handleOnChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
-  };
+const Register = () => {
+  // Javascript
+  const [passwordScore, setPasswordScore] = useState(0);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (form.password !== form.confirmPassword) {
-      toast.error("Password is not match!!!");
-      return;
-    }
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(registerSchema),
+  });
+
+  const validatePassword = () => {
+    let password = watch().password;
+    return zxcvbn(password ? password : "").score;
+  };
+  useEffect(() => {
+    setPasswordScore(validatePassword());
+  }, [watch().password]);
+
+  const onSubmit = async (data) => {
+    // const passwordScore = zxcvbn(data.password).score;
+    // console.log(passwordScore);
+    // if (passwordScore < 3) {
+    //   toast.warning("Password บ่ Strong!!!!!");
+    //   return;
+    // }
+    // console.log("ok ลูกพี่");
+    // Send to Back
     try {
-      const res = await axios.post("http://localhost:5001/api/register", form);
-      toast.success(res.data?.message || "Registered successfully");
+      const res = await axios.post("http://localhost:5001/api/register", data);
+
+      console.log(res.data);
+      toast.success(res.data);
     } catch (err) {
-      const errMsg = err.response?.data?.message || "Register failed";
+      const errMsg = err.response?.data?.message;
       toast.error(errMsg);
       console.log(err);
     }
   };
 
+  // const tam = Array.from(Array(5))
+  // console.log(tam)
+  console.log(passwordScore);
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-6">
-        <h2 className="text-2xl font-semibold text-center text-gray-800 mb-4">
-          สมัครสมาชิก
-        </h2>
+    <div
+      className="min-h-screen flex 
+    items-center justify-center bg-gray-100"
+    >
+      <div className="w-full shadow-md bg-white p-8 max-w-md">
+        <h1 className="text-2xl text-center my-4 font-bold">Register</h1>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                ชื่อ
-              </label>
               <input
-                className="w-full px-3 py-2 border rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                onChange={handleOnChange}
-                name="firstName"
-                type="text"
-                value={form.firstName}
-                placeholder="ชื่อ"
-                required
+                {...register("email")}
+                placeholder="Email"
+                className={`border w-full px-3 py-2 rounded
+            focus:outline-none focus:ring-2 focus:ring-blue-500
+            focus:border-transparent
+            ${errors.email && "border-red-500"}
+            `}
               />
+              {errors.email && (
+                <p className="text-red-500 text-sm">{errors.email.message}</p>
+              )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                นามสกุล
-              </label>
               <input
-                className="w-full px-3 py-2 border rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                onChange={handleOnChange}
-                name="lastName"
-                type="text"
-                value={form.lastName}
-                placeholder="นามสกุล"
-                required
+                {...register("password")}
+                placeholder="Password"
+                type="password"
+                className={`border w-full px-3 py-2 rounded
+              focus:outline-none focus:ring-2 focus:ring-blue-500
+              focus:border-transparent
+              ${errors.password && "border-red-500"}
+              `}
               />
+
+              {errors.password && (
+                <p className="text-red-500 text-sm">
+                  {errors.password.message}
+                </p>
+              )}
+              {watch().password?.length > 0 && (
+                <div className="flex mt-2">
+                  {Array.from(Array(5).keys()).map((item, index) => (
+                    <span className="w-1/5 px-1" key={index}>
+                      <div
+                        className={`rounded h-2 ${
+                          passwordScore <= 2
+                            ? "bg-red-500"
+                            : passwordScore < 4
+                            ? "bg-yellow-500"
+                            : "bg-green-500"
+                        }
+              `}
+                      ></div>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              className="w-full px-3 py-2 border rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              onChange={handleOnChange}
-              name="email"
-              type="email"
-              value={form.email}
-              placeholder="you@example.com"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              className="w-full px-3 py-2 border rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              onChange={handleOnChange}
-              name="password"
+            <div>
+              <input {...register("confirmPassword")} 
               type="password"
-              value={form.password}
-              placeholder="••••••••"
-              required
-            />
-          </div>
+               placeholder="Confirm Password"
+              className={`border w-full px-3 py-2 rounded
+                focus:outline-none focus:ring-2 focus:ring-blue-500
+                focus:border-transparent
+                ${errors.confirmPassword && "border-red-500"}
+                `}
+                />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Confirm Password
-            </label>
-            <input
-              className="w-full px-3 py-2 border rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              onChange={handleOnChange}
-              name="confirmPassword"
-              type="password"
-              value={form.confirmPassword}
-              placeholder="••••••••"
-              required
-            />
-          </div>
 
-          <button
-            type="submit"
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-md font-semibold transition"
-          >
-            Register
-          </button>
+              {errors.confirmPassword && (
+                <p className="text-red-500 text-sm">{errors.confirmPassword.message}</p>
+              )}
+            </div>
 
-          <div className="text-sm text-center">
-            <span className="text-gray-600">มีบัญชีแล้ว? </span>
-            <Link to="/login" className="text-blue-600 hover:underline">
-              เข้าสู่ระบบ
-            </Link>
+            <button 
+            className="bg-blue-500 rounded-md
+             w-full text-white font-bold py-2 shadow
+             hover:bg-blue-700
+             ">
+              Register
+              </button>
+
+
           </div>
         </form>
       </div>

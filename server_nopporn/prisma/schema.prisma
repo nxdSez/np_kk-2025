@@ -51,7 +51,7 @@ model Order {
   products        ProductOrder[]
   orderStatus     String         @default("รอตรวจสอบ")
   orderedBy       User           @relation(fields: [customerId], references: [id])
-  customerId      Int
+  customerId      Int            @default(1)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   stripePaymentId String
@@ -84,7 +84,7 @@ model Cart {
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
   orderedBy  User          @relation(fields: [customerId], references: [id])
-  customerId Int
+  customerId Int           @default(1)
 }
 
 model ProductCart {

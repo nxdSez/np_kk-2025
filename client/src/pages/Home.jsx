@@ -5,7 +5,7 @@ const Home = () => {
   return (
     <div>
       <p className="text-xl text-center font-bold">สินค้าโปรโมชั่น</p>
-      <ContentCarousel />
+      {/* <ContentCarousel /> */}
     </div>
   );
 };

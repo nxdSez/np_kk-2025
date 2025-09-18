@@ -37,18 +37,10 @@ const TableOrders = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "Not Processed":
-        return "bg-gray-200";
-      case "Processing":
-        return "bg-blue-200";
-      case "Shipped":
-        return "bg-yellow-200";
-      case "Delivered":
-        return "bg-green-200";
-      case "Cancelled":
+      case "รอตรวจสอบ":
         return "bg-red-200";
-      default:
-        return "bg-gray-200";
+      case "ตรวจสอบแล้ว":
+        return "bg-green-200";
     }
   };
 
@@ -113,11 +105,8 @@ const TableOrders = () => {
                       }
                       value={item.orderStatus}
                     >
-                      <option>Not Processed</option>
-                      <option>Processing</option>
-                      <option>Shipped</option>
-                      <option>Delivered</option>
-                      <option>Cancelled</option>
+                      <option>รอตรวจสอบ</option>
+                      <option>ตรวจสอบแล้ว</option>
                     </select>
                   </td>
                 </tr>

@@ -84,7 +84,7 @@ exports.userCart = async (req, res) => {
     await prisma.productCart.deleteMany({
       where: {
         cart: {
-          orderedById: user.id
+          customerId: user.id
         }
       }
     })
@@ -92,7 +92,7 @@ exports.userCart = async (req, res) => {
     // Delete old Cart 
     await prisma.cart.deleteMany({
       where: {
-        orderedById: user.id
+        customerId: user.id
       }
     })
 
@@ -115,7 +115,7 @@ exports.userCart = async (req, res) => {
           create: products
         },
         cartTotal: cartTotal,
-        orderedById: user.id
+        customerId: user.id
       }
     })
 
@@ -133,7 +133,7 @@ exports.getUserCart = async (req, res) => {
     //code
     const cart = await prisma.cart.findFirst({
       where: {
-        orderedById: Number(req.user.id)
+        customerId: Number(req.user.id)
       },
       include: {
         products: {
@@ -160,7 +160,7 @@ exports.emptyCart = async (req, res) => {
     //code
     const cart = await prisma.cart.findFirst({
       where: {
-        orderedById: Number(req.user.id)
+        customerId: Number(req.user.id)
       }
     })
 
@@ -174,7 +174,7 @@ exports.emptyCart = async (req, res) => {
 
     const result = await prisma.cart.deleteMany({
       where: {
-        orderedById: Number(req.user.id)
+        customerId: Number(req.user.id)
       }
     })
 
@@ -220,7 +220,7 @@ exports.saveOrder = async (req, res) => {
     const { id, amount, status, currency } = req.body.paymentIntent
     const userCart = await prisma.cart.findFirst({
       where: {
-        orderedById: Number(req.user.id)
+        customerId: Number(req.user.id)
       },
       include: { products: true }
     })
@@ -248,7 +248,6 @@ exports.saveOrder = async (req, res) => {
         stripePaymentId: id,
         amount: Number(amountTHB),
         status: status,
-        currency: currency,
       }
     })
 
@@ -271,7 +270,7 @@ exports.saveOrder = async (req, res) => {
 
     await prisma.cart.deleteMany({
       where: {
-        orderedById: Number(req.user.id)
+        customerId: Number(req.user.id)
       }
     })
 
@@ -287,7 +286,7 @@ exports.getOrder = async (req, res) => {
     //code
     const orders = await prisma.order.findMany({
       where: {
-        orderedById: Number(req.user.id)
+        customerId: Number(req.user.id)
       },
       include: {
         products: {

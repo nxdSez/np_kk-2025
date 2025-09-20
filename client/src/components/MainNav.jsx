@@ -75,19 +75,20 @@ const MainNav = () => {
                 <ChevronDown />
               </button>
               {userMenuOpen && (
-                <div className="absolute right-4 top-16 bg-white border rounded-md shadow-lg p-4 w-48">
+                <div className="absolute right-4 top-16 bg-white border rounded-md shadow-lg p-4 w-48 z-50">
                   <Link
                     to="/user/history"
                     className="block px-4 py-2 text-gray-800 hover:bg-gray-200"
                   >
                     History
                   </Link>
-                  <button
+                  <Link
                     onClick={() => LogOut()}
                     className="block px-4 py-2 text-gray-800 hover:bg-gray-200"
+                    to="/"
                   >
                     Logout
-                  </button>
+                  </Link>
                 </div>
               )}
             </div>

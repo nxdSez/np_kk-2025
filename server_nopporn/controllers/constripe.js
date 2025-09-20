@@ -5,7 +5,7 @@ exports.payment = async (req, res) => {
     //code
     const cart = await prisma.cart.findFirst({
       where: {
-        orderedById: Number(req.user.id)
+        customerId: Number(req.user.id)
       }
     })
     const stripe = require("stripe")("sk_test_51RxURmEgBfjIh6AVb3W0sVOx1UPIPHjdaAtiwn1lmF8dCCTfcwHbipqFBkIEAhK0qu12N35UenUWGYGScgOsGuou00qUvl8qae", {

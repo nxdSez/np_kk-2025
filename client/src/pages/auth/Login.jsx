@@ -90,10 +90,7 @@ const Login = () => {
 
           <div className="text-sm text-center">
             <span className="text-gray-600">ยังไม่มีบัญชี? </span>
-            <Link
-              to="/register"
-              className="text-blue-600 hover:underline"
-            >
+            <Link to="/register" className="text-blue-600 hover:underline">
               สมัครสมาชิก
             </Link>
           </div>

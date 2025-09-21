@@ -27,7 +27,6 @@ const Login = () => {
       const res = await actionLogin(form);
       const role = res.data.payload.role;
       roleRedirect(role);
-      toast.success("Welcome Back");
     } catch (err) {
       console.log(err);
       const errMsg = err.response?.data?.message;
@@ -39,7 +38,7 @@ const Login = () => {
     if (role === "admin") {
       navigate("/admin");
     } else {
-      navigate(-1);
+      navigate("/");
     }
   };
 

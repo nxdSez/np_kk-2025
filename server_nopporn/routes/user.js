@@ -1,4 +1,5 @@
 const express = require('express')
+const router = express.Router()
 const { authCheck, adminCheck } = require('../middleware/authCheck')
 const {
   listUsers,
@@ -12,7 +13,6 @@ const {
   getOrder
 
 } = require('../controllers/conuser')
-const router = express.Router()
 
 router.get('/users', authCheck, adminCheck, listUsers)
 router.post('/change-status', authCheck, adminCheck, changeStatus)

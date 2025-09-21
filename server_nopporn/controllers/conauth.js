@@ -57,7 +57,7 @@ exports.login = async (req, res) => {
         email: email
       }
     })
-    if (!user || !user.enable) {
+    if (!user || !user.enabled) {
       return res.status(400).json({ massage: 'User Not found or not Enable' })
     }
     // Check Password

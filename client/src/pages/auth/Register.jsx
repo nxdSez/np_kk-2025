@@ -6,6 +6,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import zxcvbn from "zxcvbn";
 import { useForm } from "react-hook-form";
+import { Link, useNavigate } from "react-router-dom";
 
 const registerSchema = z
   .object({
@@ -126,31 +127,38 @@ const Register = () => {
             </div>
 
             <div>
-              <input {...register("confirmPassword")} 
-              type="password"
-               placeholder="Confirm Password"
-              className={`border w-full px-3 py-2 rounded
+              <input
+                {...register("confirmPassword")}
+                type="password"
+                placeholder="Confirm Password"
+                className={`border w-full px-3 py-2 rounded
                 focus:outline-none focus:ring-2 focus:ring-blue-500
                 focus:border-transparent
                 ${errors.confirmPassword && "border-red-500"}
                 `}
-                />
-
+              />
 
               {errors.confirmPassword && (
-                <p className="text-red-500 text-sm">{errors.confirmPassword.message}</p>
+                <p className="text-red-500 text-sm">
+                  {errors.confirmPassword.message}
+                </p>
               )}
             </div>
 
-            <button 
-            className="bg-blue-500 rounded-md
+            <button
+              className="bg-blue-500 rounded-md
              w-full text-white font-bold py-2 shadow
              hover:bg-blue-700
-             ">
-              Register
-              </button>
-
-
+             "
+            >
+              สมัครสมาชิก
+            </button>
+            <div className="text-center text-sm">
+              <span className="text-gray-600">มีบัญชีแล้ว? </span>
+              <Link to="/login" className="text-blue-600 hover:underline">
+                ล็อคอิน
+              </Link>
+            </div>
           </div>
         </form>
       </div>

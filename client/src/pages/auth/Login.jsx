@@ -44,9 +44,9 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-6">
-        <h2 className="text-2xl font-semibold text-center text-gray-800 mb-4">
+        <h2 className="mt-10 text-center text-2xl/9 font-bold tracking-tight text-black">
           เข้าสู่ระบบ
         </h2>
 

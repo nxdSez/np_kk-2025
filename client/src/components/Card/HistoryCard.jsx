@@ -6,66 +6,51 @@ import { numberFormat } from "../../utils/number";
 
 const HistoryCard = () => {
   const token = useNpStore((state) => state.token);
-  // console.log(token);
   const [orders, setOrders] = useState([]);
 
   useEffect(() => {
-    // code
     hdlGetOrders(token);
-  }, []);
+  }, [token]);
 
   const hdlGetOrders = (token) => {
     getOrders(token)
       .then((res) => {
-        // console.log(res);
-        setOrders(res.data.orders);
+        setOrders(res.data.orders || []);
       })
       .catch((err) => {
         console.log(err);
       });
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Not Processed":
-        return "bg-gray-200";
-      case "Processing":
-        return "bg-blue-200";
-      case "Shipped":
-        return "bg-yellow-200";
-      case "Delivered":
-        return "bg-green-200";
-      case "Cancelled":
-        return "bg-red-200";
-      default:
-        return "bg-gray-200";
-    }
-  };
+  // group by paymentIntentId (fallback to order id)
+  const grouped = Object.values(
+    (orders || []).reduce((acc, o) => {
+      const key = o.paymentIntentId || `single-${o.id}`;
+      if (!acc[key]) acc[key] = { key, items: [] };
+      acc[key].items.push(o);
+      return acc;
+    }, {})
+  );
 
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">ประวัติการสั่งซื้อ</h1>
-      {/* คลุม */}
       <div className="space-y-4">
-        {/* Card Loop Order*/}
-        {orders?.map((item, index) => {
-          // console.log(item)
+        {grouped.map((group) => {
+          const items = group.items;
+          const total = items.reduce((s, it) => s + Number(it.total), 0);
+          const first = items[0] || {};
+          const displayDate = first.updatedAt ? dateFormat(first.updatedAt) : `Order #${first.id}`;
+
           return (
-            <div key={index} className="bg-gray-100 p-4 rounded-md shadow-md">
-              {/* ทีมงาน header */}
+            <div key={group.key} className="bg-gray-100 p-4 rounded-md shadow-md">
               <div className="flex justify-between mb-2">
                 <div>
                   <p className="text-sm">Order date</p>
-                  <p className="font-bold">{dateFormat(item.updatedAt)}</p>
-                </div>
-                <div>
-                  <span className={`${getStatusColor(item.orderStatus)} 
-                  px-2 py-1 rounded-full`}>
-                    {item.orderStatus}
-                  </span>
+                  <p className="font-bold">{displayDate}</p>
                 </div>
               </div>
-              {/* ทีมงาน table Loop Product*/}
+
               <div>
                 <table className="border w-full px-4 py-4">
                   <thead>
@@ -78,29 +63,27 @@ const HistoryCard = () => {
                   </thead>
 
                   <tbody>
-                    {item.products?.map((product, index) => {
-                      // console.log(product);
+                    {items.map((item, idx) => {
+                      const product = item.product || {};
+                      const price = product.price || 0;
+                      const count = price > 0 ? Math.round(Number(item.total) / Number(price)) : 1;
                       return (
-                        <tr key={index}>
-                          <td className="text-left">{product.product.title}</td>
-                          <td className="text-center">{numberFormat(product.product.price)}</td>
-                          <td className="text-center">{product.count}</td>
-                          <td className="text-right">
-                            {numberFormat(
-                              product.count * product.product.price
-                            )}{" "}
-                          </td>
+                        <tr key={idx}>
+                          <td className="text-left">{product.title || "-"}</td>
+                          <td className="text-center">{numberFormat(price)}</td>
+                          <td className="text-center">{count}</td>
+                          <td className="text-right">{numberFormat(item.total)}</td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
               </div>
-              {/* ทีมงาน Total */}
+
               <div>
                 <div className="text-right">
                   <p>ราคาสุทธิ</p>
-                  <p>{numberFormat(item.cartTotal)}</p>
+                  <p>{numberFormat(total)}</p>
                 </div>
               </div>
             </div>

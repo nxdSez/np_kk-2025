@@ -3,18 +3,31 @@ const prisma = require("../config/prisma")
 
 exports.changeOderStatus = async (req, res) => {
   try {
-    const { orderId, orderStatus } = req.body
+    const { orderId, total, productId } = req.body
+    if (!orderId) {
+      return res.status(400).json({ message: "orderId is required" })
+    }
+
+    const data = {}
+    if (total !== undefined) data.total = Number(total)
+    if (productId !== undefined) data.productId = Number(productId)
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ message: "No updatable fields provided" })
+    }
+
     const orderUpdate = await prisma.order.update({
-      where: {
-        id: orderId,
-      },
-      data: {
-        orderStatus: orderStatus
+      where: { id: Number(orderId) },
+      data,
+      include: {
+        product: true,
+        customer: {
+          select: { id: true, email: true, address: true }
+        }
       }
     })
 
-
-    console.log(orderId, orderStatus)
+    console.log("updated order", orderId, data)
     res.json(orderUpdate)
   } catch (err) {
     console.log(err)
@@ -25,19 +38,16 @@ exports.getOrderAdmin = async (req, res) => {
   try {
     const orders = await prisma.order.findMany({
       include: {
-        products: {
-          include: {
-            product: true
-          }
-        },
-        orderedBy: {
+        product: true,
+        customer: {
           select: {
             id: true,
             email: true,
             address: true,
           }
         }
-      }
+      },
+      orderBy: { id: "desc" }
     })
     res.send(orders)
   } catch (err) {

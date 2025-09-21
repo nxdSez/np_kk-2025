@@ -38,9 +38,9 @@ const TableOrders = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case "รอตรวจสอบ":
-        return "bg-red-200";
+        return "bg-red-400";
       case "ตรวจสอบแล้ว":
-        return "bg-green-200";
+        return "bg-green-400";
     }
   };
 

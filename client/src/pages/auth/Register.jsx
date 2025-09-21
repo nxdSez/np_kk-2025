@@ -1,5 +1,5 @@
 // rafce
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { z } from "zod";
@@ -9,7 +9,6 @@ import { useForm } from "react-hook-form";
 
 const registerSchema = z
   .object({
-    name: z.string().min(2, { message: "Name ต้องมากกว่า 2 ตัวอักษร" }),
     email: z.string().email({ message: "Invalid email!!!" }),
     password: z.string().min(8, { message: "Password ต้องมากกว่า 8 ตัวอักษร" }),
     confirmPassword: z.string(),
@@ -41,6 +40,14 @@ const Register = () => {
   }, [watch().password]);
 
   const onSubmit = async (data) => {
+    // const passwordScore = zxcvbn(data.password).score;
+    // console.log(passwordScore);
+    // if (passwordScore < 3) {
+    //   toast.warning("Password บ่ Strong!!!!!");
+    //   return;
+    // }
+    // console.log("ok ลูกพี่");
+    // Send to Back
     try {
       const res = await axios.post("http://localhost:5001/api/register", data);
 
@@ -53,14 +60,16 @@ const Register = () => {
     }
   };
 
+  // const tam = Array.from(Array(5))
+  // console.log(tam)
   console.log(passwordScore);
   return (
     <div
       className="min-h-screen flex 
     items-center justify-center bg-gray-100"
     >
-      <div className="w-full shadow-md bg-white p-8 max-w-md rounded-xl">
-        <h1 className="text-2xl text-center my-4 font-bold">สมัครสมาชิก</h1>
+      <div className="w-full shadow-md bg-white p-8 max-w-md">
+        <h1 className="text-2xl text-center my-4 font-bold">Register</h1>
 
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-4">

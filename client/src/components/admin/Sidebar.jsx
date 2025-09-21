@@ -1,7 +1,9 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import { Gauge, Wrench, LogOut, Package, Layers } from "lucide-react";
+import useNpStore from "../../store/nopporn-stores";
 const Sidebar = () => {
+  const Logout = useNpStore((state) => state.LogOut);
   return (
     <div
       className="bg-gray-800 w-64 text-gray-100 
@@ -79,6 +81,8 @@ const Sidebar = () => {
 
       <div>
         <NavLink
+          onClick={() => Logout()}
+          to={"/login"}
           className={({ isActive }) =>
             isActive
               ? "bg-gray-900 rounded-md text-white px-4 py-2 flex items-center"

@@ -1,9 +1,6 @@
 import React, { useState, useEffect, use } from "react";
 import useNpStore from "../../store/nopporn-stores";
-import {
-  createCategory,
-  removeCategory,
-} from "../../api/Category";
+import { createCategory, removeCategory } from "../../api/Category";
 import { toast } from "react-toastify";
 
 const FormCategory = () => {
@@ -19,8 +16,6 @@ const FormCategory = () => {
     getCategory(token);
   }, []);
 
-
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name) {
@@ -31,9 +26,16 @@ const FormCategory = () => {
       const res = await createCategory(token, { name });
       console.log(res.data.name);
       toast.success(`Category created successfully`);
+      setName("");
       getCategory(token);
     } catch (err) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data ||
+        err.message ||
+        "Create failed";
       console.error("Error creating category:", err);
+      toast.error(msg);
     }
   };
   const handleRemove = async (id) => {
@@ -44,8 +46,13 @@ const FormCategory = () => {
       console.log("Category removed:", res.data);
       toast.success("Category removed successfully");
     } catch (err) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data ||
+        err.message ||
+        "Remove failed";
       console.error("Error removing category:", err);
-      toast.error("Failed to remove category");
+      toast.error(msg);
     }
   };
 
@@ -55,8 +62,10 @@ const FormCategory = () => {
       <form className="my-4" onSubmit={handleSubmit}>
         <input
           onChange={(e) => setName(e.target.value)}
-          className="=border p-2 rounded w-full mb-4 bg-gray-100"
+          className="border p-2 rounded w-full mb-4 bg-gray-100"
           type="text"
+          value={name}
+          placeholder="New Category Name"
         />
         <button
           className="bg-blue-500 text-white p-2 rounded w-full"

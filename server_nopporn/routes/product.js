@@ -3,7 +3,7 @@ const router = express.Router()
 
 // Controller
 const { create, list, remove, listby, searchFilters, update, read, createImages, removeImage } = require('../controllers/conproduct')
-const { authCheck, adminCheck } = require('../middleware/authCheck')
+const { authCheck, adminOnly, staffOnly } = require('../middleware/authCheck')
 // @Endpoint http://localhost:5001/api/product
 router.post('/product', create)
 router.put('/product/:id', update)
@@ -13,8 +13,8 @@ router.delete('/product/:id', remove)
 router.post('/productby', listby)
 router.post('/search/filters', searchFilters)
 // @Endpoint http://localhost:5001/api/images
-router.post('/images', authCheck, adminCheck, createImages)
-router.post('/removeimage', authCheck, adminCheck, removeImage)
+router.post('/images', authCheck, adminOnly, createImages)
+router.post('/removeimage', authCheck, adminOnly, removeImage)
 
 
 module.exports = router

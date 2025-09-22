@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { authCheck, adminCheck, } = require('../middleware/authCheck')
+const { authCheck, adminOnly, } = require('../middleware/authCheck')
 const {
   listUsers,
   changeStatus,
@@ -14,9 +14,9 @@ const {
 
 } = require('../controllers/conuser')
 
-router.get('/users', authCheck, adminCheck, listUsers)
-router.post('/change-status', authCheck, adminCheck, changeStatus)
-router.post('/change-role', authCheck, adminCheck, changeRole)
+router.get('/users', authCheck, adminOnly, listUsers)
+router.post('/change-status', authCheck, adminOnly, changeStatus)
+router.post('/change-role', authCheck, adminOnly, changeRole)
 
 router.post('/user/cart', authCheck, userCart)
 router.get('/user/cart', authCheck, getUserCart)

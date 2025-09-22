@@ -14,11 +14,3 @@ export const currentAdmin = async (token) => {
         }
     })
 }
-
-export const currentEmployee = async (token) => {
-    return await axios.post('http://localhost:5001/api/current-employee', {}, {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
-    })
-}

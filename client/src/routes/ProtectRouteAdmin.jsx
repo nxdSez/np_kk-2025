@@ -9,11 +9,10 @@ const ProtectRouteAdmin = ({ element }) => {
   const token = useNpStore((state) => state.token);
 
   useEffect(() => {
-    if (user && token) {
-      currentAdmin(token)
-      currentEmployee(token)
-        .then((res) => setIsAuthenticated(true))
-        .catch((err) => setIsAuthenticated(false));
+    if (["admin", "employee"].includes(res.data.role?.toLowerCase())) {
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
     }
   }, []);
 

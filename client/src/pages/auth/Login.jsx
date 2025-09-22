@@ -35,7 +35,7 @@ const Login = () => {
   };
 
   const roleRedirect = (role) => {
-    if (role === "admin") {
+    if (role === "admin" || role === "employee") {
       navigate("/admin");
     } else {
       navigate("/");

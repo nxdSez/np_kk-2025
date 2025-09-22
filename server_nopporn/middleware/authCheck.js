@@ -47,3 +47,20 @@ exports.adminCheck = async (req, res, next) => {
     res.status(500).json({ message: "Error Admin access denied" })
   }
 }
+
+exports.employeeCheck = async (req, res, next) => {
+  try {
+    const { email } = req.user
+    console.log('employee check', email)
+    const empUser = await prisma.user.findFirst({
+      where: { email: email }
+    })
+    if (!empUser || (empUser.role !== 'employee' && empUser.role !== 'employee')) {
+      return res.status(403).json({ message: 'Access Denied: You have not permission to access this resource' })
+    }
+    next()
+  } catch (err) {
+    console.log(err)
+    res.status(500).json({ message: "Error Employee access denied" })
+  }
+}

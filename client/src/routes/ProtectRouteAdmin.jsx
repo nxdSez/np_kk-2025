@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import useNpStore from "../store/nopporn-stores";
-import { currentAdmin } from "../api/authen";
+import { currentAdmin, currentEmployee } from "../api/authen";
 import LoadInfoToRedirect from "./loadinfToRedirect";
 
 const ProtectRouteAdmin = ({ element }) => {
@@ -11,6 +11,7 @@ const ProtectRouteAdmin = ({ element }) => {
   useEffect(() => {
     if (user && token) {
       currentAdmin(token)
+      currentEmployee(token)
         .then((res) => setIsAuthenticated(true))
         .catch((err) => setIsAuthenticated(false));
     }

@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { authCheck, adminCheck } = require('../middleware/authCheck')
+const { authCheck, adminCheck, } = require('../middleware/authCheck')
 const {
   listUsers,
   changeStatus,

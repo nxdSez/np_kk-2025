@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
-const { register, login, } = require('../controllers/conauth')
-const { authCheck, adminOnly, staffOnly,currentUser } = require('../middleware/authCheck')
+const { register, login, currentUser, } = require('../controllers/conauth')
+const { authCheck, adminOnly, staffOnly } = require('../middleware/authCheck')
 
 router.post('/register', register)
 router.post('/login', login)

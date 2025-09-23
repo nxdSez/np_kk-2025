@@ -3,6 +3,8 @@ import { ShoppingCart } from "lucide-react";
 import useNpStore from "../../store/nopporn-stores";
 import { numberFormat } from "../../utils/number";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+
 
 const ProductCard = ({ item }) => {
   const actionAddtoCart = useNpStore((state) => state.actionAddtoCart);

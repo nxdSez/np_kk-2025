@@ -7,10 +7,10 @@ export const getOrderAdmin = async (token) => {
     },
   });
 };
-export const changeOrderAdmin = async (token, orderId, orderStatus) => {
+export const changeOrderAdmin = async (token, orderId, status) => {
   return await axios.put(
     "http://localhost:5001/api/admin/order-status",
-    { orderId, orderStatus },
+    { orderId, status },
     {
       headers: {
         Authorization: `Bearer ${token}`,

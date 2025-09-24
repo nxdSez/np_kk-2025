@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { authCheck, adminOnly, } = require('../middleware/authCheck')
+const { authCheck, adminOnly, staffOnly } = require('../middleware/authCheck')
 const {
   listUsers,
   changeStatus,
@@ -10,7 +10,8 @@ const {
   emptyCart,
   saveAddress,
   saveOrder,
-  getOrder
+  getOrder,
+  getAllOrders
 
 } = require('../controllers/conuser')
 

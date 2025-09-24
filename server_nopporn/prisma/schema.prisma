@@ -22,9 +22,9 @@ enum Role {
 }
 
 enum OrderStatus {
-  pending
-  approved
-  cancelled
+  PENDING
+  APPROVED
+  CANCELLED
 }
 
 model User {
@@ -66,7 +66,7 @@ model Order {
   updatedAt       DateTime    @updatedAt
   customer        User        @relation(fields: [customerId], references: [id])
   customerId      Int
-  status          OrderStatus @default(pending)
+  status          OrderStatus @default(PENDING)
   stripePaymentId String? // optional
   orderDate       DateTime?   @default(now())
 }
@@ -83,18 +83,17 @@ model OrderItem {
 }
 
 model OrderLineLog {
-  id        Int     @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   customerID String
-  productID String
-  orderID   String
-  orderDate DateTime
-  price    Float
-  frequency Int @default(0)
-  createdAt DateTime @default(now())
+  productID  String
+  orderID    String
+  orderDate  DateTime
+  price      Float
+  frequency  Int      @default(0)
+  createdAt  DateTime @default(now())
 
   @@index([customerID, productID], name: "customer_product_idx")
   @@index([orderID], name: "order_idx")
-
 }
 
 model Category {

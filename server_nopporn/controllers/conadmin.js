@@ -1,7 +1,7 @@
 const { PrismaClientValidationError } = require("@prisma/client/runtime/library")
 const prisma = require("../config/prisma")
 
-exports.changeOderStatus = async (req, res) => {
+exports.changeOrderStatus = async (req, res) => {
   try {
     const { orderId, total, productId } = req.body
     if (!orderId) {
@@ -38,7 +38,7 @@ exports.getOrderAdmin = async (req, res) => {
   try {
     const orders = await prisma.order.findMany({
       include: {
-        product: true,
+        orderItems: true,
         customer: {
           select: {
             id: true,

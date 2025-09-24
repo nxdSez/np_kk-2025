@@ -21,6 +21,12 @@ enum Role {
   employee
 }
 
+enum OrderStatus {
+  pending
+  approved
+  cancelled
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique
@@ -55,12 +61,14 @@ model Product {
 model Order {
   id              Int         @id @default(autoincrement())
   orderItems      OrderItem[]
-  total           Float       @default(0)
+  total           Float
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   customer        User        @relation(fields: [customerId], references: [id])
   customerId      Int
+  status          OrderStatus @default(pending)
   stripePaymentId String? // optional
+  orderDate       DateTime?   @default(now())
 }
 
 model OrderItem {
@@ -71,6 +79,22 @@ model OrderItem {
   productId Int
   quantity  Int
   price     Float // price per unit at time of purchase
+  counted   Boolean @default(false)
+}
+
+model OrderLineLog {
+  id        Int     @id @default(autoincrement())
+  customerID String
+  productID String
+  orderID   String
+  orderDate DateTime
+  price    Float
+  frequency Int @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([customerID, productID], name: "customer_product_idx")
+  @@index([orderID], name: "order_idx")
+
 }
 
 model Category {

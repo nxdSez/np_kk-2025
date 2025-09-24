@@ -80,7 +80,7 @@ exports.userCart = async (req, res) => {
     }
 
     // Deleted old Cart item
-    await prisma.productCart.deleteMany({
+    await prisma.productOnCart.deleteMany({
       where: {
         cart: {
           customerId: user.id,
@@ -197,90 +197,162 @@ exports.saveAddress = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
+// exports.saveOrder = async (req, res) => {
+//   try {
+//     //code
+//     // Step 0 Check Stripe
+//     // console.log(req.body)
+//     // return res.send('hello Jukkru!!!')
+//     // stripePaymentId String
+//     // amount          Int
+//     // status          String
+//     // currentcy       String
+//     const { id, amount, status, currency } = req.body.paymentIntent;
+
+//     // Step 1 Get User Cart
+//     const userCart = await prisma.cart.findFirst({
+//       where: {
+//         customerId: Number(req.user.id),
+//       },
+//       include: { products: true },
+//     });
+
+//     // Check Cart empty
+//     if (!userCart || userCart.products.length === 0) {
+//       return res.status(400).json({ ok: false, message: "Cart is Empty" });
+//     }
+
+//     const amountTHB = Number(amount) / 100;
+
+//     // Create Orders: one Order row per cart item (connect relations)
+//     const createdOrders = await Promise.all(
+//       userCart.products.map(async (item) => {
+//         const order = await prisma.order.create({
+//           data: {
+//             total: Number(item.price) * Number(item.count),
+//             // connect relations
+//             customer: { connect: { id: Number(req.user.id) } },
+//             orderItems: { connect: { id: item.productId } },
+//             // optional: store stripe/payment info if schema has fields
+//             stripePaymentId: id,
+//           },
+//           include: {
+//             orderItems: true,
+//             customer: {
+//               select: { id: true, email: true, address: true },
+//             },
+//           },
+//         });
+//         return order;
+//       })
+//     );
+
+//     // Update Product
+//     const update = userCart.products.map((item) => ({
+//       where: { id: item.productId },
+//       data: {
+//         quantity: { decrement: item.count },
+//         sold: { increment: item.count },
+//       },
+//     }));
+//     console.log(update);
+
+//     await Promise.all(update.map((updated) => prisma.product.update(updated)));
+
+//     await prisma.cart.deleteMany({
+//       where: { customerId: Number(req.user.id) },
+//     });
+//     res.json({ ok: true, orders: createdOrders });
+//   } catch (err) {
+//     console.log(err);
+//     res.status(500).json({ message: "Server Error" });
+//   }
+// };
+
 exports.saveOrder = async (req, res) => {
   try {
-    //code
-    // Step 0 Check Stripe
-    // console.log(req.body)
-    // return res.send('hello Jukkru!!!')
-    // stripePaymentId String
-    // amount          Int
-    // status          String
-    // currentcy       String
-    const { id, amount, status, currency } = req.body.paymentIntent;
+    const { id, amount } = req.body.paymentIntent;
 
-    // Step 1 Get User Cart
     const userCart = await prisma.cart.findFirst({
-      where: {
-        customerId: Number(req.user.id),
-      },
+      where: { customerId: Number(req.user.id) },
       include: { products: true },
     });
 
-    // Check Cart empty
     if (!userCart || userCart.products.length === 0) {
       return res.status(400).json({ ok: false, message: "Cart is Empty" });
     }
 
-    const amountTHB = Number(amount) / 100;
-
-    // Create Orders: one Order row per cart item (connect relations)
-    const createdOrders = await Promise.all(
-      userCart.products.map(async (item) => {
-        const order = await prisma.order.create({
-          data: {
-            total: Number(item.price) * Number(item.count),
-            // connect relations
-            customer: { connect: { id: Number(req.user.id) } },
-            product: { connect: { id: item.productId } },
-            // optional: store stripe/payment info if schema has fields
-            stripePaymentId: id,
-            price: item.price,
-            // amount: amountTHB,
-            // status: status,
-            // currentcy: currency,
-          },
-          include: {
-            product: true,
-            customer: {
-              select: { id: true, email: true, address: true },
-            },
-          },
-        });
-        return order;
-      })
+    // รวมยอดทั้งหมด
+    const total = userCart.products.reduce(
+      (sum, item) => sum + Number(item.price) * Number(item.count),
+      0
     );
 
-    // Update Product
-    const update = userCart.products.map((item) => ({
-      where: { id: item.productId },
+    // ✅ สร้าง order เดียว และสร้าง orderItems หลายรายการ
+    const order = await prisma.order.create({
       data: {
-        quantity: { decrement: item.count },
-        sold: { increment: item.count },
+        total,
+        customer: { connect: { id: Number(req.user.id) } },
+        stripePaymentId: id,
+        orderItems: {
+          create: userCart.products.map((item) => ({
+            product: { connect: { id: item.productId } },
+            quantity: item.count,
+            price: item.price,
+          })),
+        },
       },
-    }));
-    console.log(update);
+      include: {
+        orderItems: {
+          include: {
+            product: { include: { images: true } }, // ถ้าต้องการรูป
+          },
+        },
+        customer: true,
+      },
+    });
 
-    await Promise.all(update.map((updated) => prisma.product.update(updated)));
+    // อัปเดตจำนวนสินค้าในสต๊อก
+    await Promise.all(
+      userCart.products.map((item) =>
+        prisma.product.update({
+          where: { id: item.productId },
+          data: {
+            quantity: { decrement: item.count },
+            sold: { increment: item.count },
+          },
+        })
+      )
+    );
 
+    // ลบ cart
     await prisma.cart.deleteMany({
       where: { customerId: Number(req.user.id) },
     });
-    res.json({ ok: true, orders: createdOrders });
+
+    res.json({ ok: true, order });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 };
+
+
+
 exports.getOrder = async (req, res) => {
   try {
     //code
     const orders = await prisma.order.findMany({
       where: { customerId: Number(req.user.id) },
+      orderBy: { updatedAt: 'desc' },
       include: {
-        product: {
+        orderItems: {
           include: {
-            images: true,
+            product: {
+              include: {
+                images: true,
+              },
+            },
           },
         },
       },

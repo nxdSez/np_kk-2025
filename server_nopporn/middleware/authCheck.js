@@ -4,24 +4,33 @@ const jwt = require('jsonwebtoken');
 
 exports.authCheck = async (req, res, next) => {
   try {
-    const headerToken = req.headers.authorization || '';
-    const [, token] = headerToken.split(' ');
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader && authHeader.startsWith('Bearer ')
+      ? authHeader.split(' ')[1]
+      : null;
+
     if (!token) return res.status(401).json({ message: 'No token provided' });
 
-    const decoded = jwt.verify(token, process.env.SECRET);
+    const decoded = jwt.verify(token, process.env.SECRET); // ✅ จะ throw ถ้า token หมดอายุ
     req.user = decoded;
 
-    const user = await prisma.user.findFirst({ where: { email: decoded?.email } });
+    const user = await prisma.user.findFirst({
+      where: { email: decoded?.email }
+    });
     if (!user) return res.status(401).json({ message: 'Account not found' });
-    if (user.enabled === false) return res.status(403).json({ message: 'This account cannot access' });
+    if (user.enabled === false)
+      return res.status(403).json({ message: 'This account cannot access' });
 
     req.user.role = user.role;
     next();
   } catch (err) {
-    if (err?.name === 'TokenExpiredError') return res.status(401).json({ message: 'Token expired' });
+    if (err && err.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Token expired' });
+    }
     return res.status(401).json({ message: 'Token invalid' });
   }
 };
+
 
 exports.allowRoles = (...allowed) => {
   return async (req, res, next) => {

@@ -1,7 +1,7 @@
 // client/src/routes/ProtectRouteAdmin.jsx
 import React, { useState, useEffect } from "react";
 import useNpStore from "../store/nopporn-stores";
-import { currentUser } from "../api/authen";
+import { currentStaff } from "../api/authen";
 import LoadInfoToRedirect from "./loadinfToRedirect";
 
 const ProtectRouteAdmin = ({ element }) => {
@@ -14,19 +14,16 @@ const ProtectRouteAdmin = ({ element }) => {
     const run = async () => {
       if (!user || !token) return setOk(false);
       try {
-        const res = await currentUser(token);
-        const role = res?.data?.role?.toLowerCase?.();
-        if (["admin", "employee"].includes(role)) {
-          if (mounted) setOk(true);
-        } else {
-          if (mounted) setOk(false);
-        }
-      } catch {
+        const res = await currentStaff(token); // ✅ ตรวจสิทธิ์ที่ server (admin+employee)
+        if (mounted) setOk(true);
+      } catch (e) {
         if (mounted) setOk(false);
       }
     };
     run();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [user, token]);
 
   return ok ? element : <LoadInfoToRedirect />;

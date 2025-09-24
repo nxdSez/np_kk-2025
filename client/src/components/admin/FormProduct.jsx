@@ -8,10 +8,10 @@ import { numberFormat } from "../../utils/number";
 import { dateFormat } from "../../utils/dateformat";
 
 const initialState = {
-  title: "title",
-  description: "description",
-  price: 0,
-  quantity: 0,
+  title: "",
+  description: "",
+  price: Number(""),
+  quantity: Number(""),
   categoryId: "",
   images: [],
 };
@@ -27,8 +27,8 @@ const FormProduct = () => {
   const [form, setForm] = useState({
     title: "",
     description: "",
-    price: "",
-    quantity: "",
+    price: Number(""),
+    quantity: Number(""),
     categoryId: "",
     images: [],
   });
@@ -64,7 +64,7 @@ const FormProduct = () => {
     if (window.confirm("Are you sure you want to delete this product?")) {
       try {
         const res = await deleteProduct(token, id);
-        getProduct(s);
+        getProduct();
         toast.success("Product deleted successfully");
       } catch (err) {
         console.error("Error deleting product:", err);

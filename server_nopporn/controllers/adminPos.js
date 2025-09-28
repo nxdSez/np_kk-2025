@@ -77,16 +77,16 @@ async function logOrderAnalytics(tx, order) {
   const itemsToCount = (order.orderItems || []).filter((it) => !it.counted);
 
   for (const it of itemsToCount) {
-    const productid = it.product?.code ?? String(it.productId);
+    const productID = it.product?.code ?? String(it.productId);
 
     const prev = await tx.orderLineLog.count({
-      where: { customerID, productid },
+      where: { customerID, productID },
     });
 
     await tx.orderLineLog.create({
       data: {
         customerID,
-        productid,
+        productID,
         orderID,
         orderDate,
         // ถ้าต้องการยอดต่อแถว: Number(it.price) * Number(it.quantity)
@@ -156,7 +156,7 @@ exports.createManualOrder = async (req, res) => {
               product: { connect: { id: l.productId } },
               quantity: l.quantity,
               price: l.price,
-              counted: enumStatus === 'APPROVED', // ถ้าอนุมัติทันที นับเลย
+              counted: false,
             })),
           },
         },

@@ -1,6 +1,14 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { Gauge, Wrench, LogOut, Package, Layers } from "lucide-react";
+import {
+  Gauge,
+  Wrench,
+  LogOut,
+  Package,
+  Layers,
+  ShoppingCart,
+  Cable ,
+} from "lucide-react";
 import useNpStore from "../../store/nopporn-stores";
 const Sidebar = () => {
   const Logout = useNpStore((state) => state.LogOut);
@@ -74,8 +82,32 @@ const Sidebar = () => {
               : "text-gray-300 px-4 py-2 hover:bg-gray-700 hover:text-white rounded flex items-center"
           }
         >
-          <Package className="mr-2" />
+          <ShoppingCart className="mr-2" />
           Orders
+        </NavLink>
+        <NavLink
+          to="pos-order"
+          end
+          className={({ isActive }) =>
+            isActive
+              ? "bg-gray-900 rounded-md text-white px-4 py-2 flex items-center"
+              : "text-gray-300 px-4 py-2 hover:bg-gray-700 hover:text-white rounded flex items-center"
+          }
+        >
+          <ShoppingCart className="mr-2" />
+          POS Order
+        </NavLink>
+        <NavLink
+          to="assoc-rules"
+          end
+          className={({ isActive }) =>
+            isActive
+              ? "bg-gray-900 rounded-md text-white px-4 py-2 flex items-center"
+              : "text-gray-300 px-4 py-2 hover:bg-gray-700 hover:text-white rounded flex items-center"
+          }
+        >
+          <Cable className="mr-2" />
+          Association Rules
         </NavLink>
       </nav>
 

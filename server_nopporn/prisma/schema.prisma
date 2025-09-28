@@ -43,19 +43,22 @@ model User {
 }
 
 model Product {
-  id          Int             @id @default(autoincrement())
-  title       String
-  description String
-  price       Float
-  sold        Int             @default(0)
-  quantity    Int
-  orderItems  OrderItem[]
-  cartItems   ProductOnCart[]
-  images      Image[]
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  category    Category?       @relation(fields: [categoryId], references: [id])
-  categoryId  Int?
+  id                 Int                  @id @default(autoincrement())
+  title              String
+  description        String
+  price              Float
+  sold               Int                  @default(0)
+  quantity           Int
+  orderItems         OrderItem[]
+  cartItems          ProductOnCart[]
+  images             Image[]
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  category           Category?            @relation(fields: [categoryId], references: [id])
+  categoryId         Int?
+  ProductAssociation ProductAssociation[]
+  ProductAssocTarget ProductAssociation[] @relation("AssocTarget")
+  ProductAssocSource ProductAssociation[] @relation("AssocSource")
 }
 
 model Order {
@@ -94,6 +97,26 @@ model OrderLineLog {
 
   @@index([customerID, productID], name: "customer_product_idx")
   @@index([orderID], name: "order_idx")
+}
+
+model ProductAssociation {
+  id              Int      @id @default(autoincrement())
+  name            String
+  sourceProductId Int
+  targetProductId Int
+  weight          Int      @default(1)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  source    Product  @relation("AssocSource", fields: [sourceProductId], references: [id])
+  target    Product  @relation("AssocTarget", fields: [targetProductId], references: [id])
+  Product   Product? @relation(fields: [productId], references: [id])
+  productId Int?
+
+  @@unique([sourceProductId, targetProductId]) // กันซ้ำ
+  @@index([sourceProductId])
+  @@index([targetProductId])
 }
 
 model Category {

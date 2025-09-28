@@ -1,5 +1,12 @@
 import axios from "axios";
 
+const API = "http://localhost:5001/api";
+
+const cfg = (token, extra = {}) => ({
+  headers: { Authorization: `Bearer ${token}` },
+  ...extra,
+});
+
 export const createProduct = async (token, form) => {
   return await axios.post("http://localhost:5001/api/product", form, {
     headers: {
@@ -65,6 +72,7 @@ export const removeFiles = async (token, public_id) => {
   );
 };
 
+
 export const searchFilters = async (arg) => {
   return await axios.post("http://localhost:5001/api/search/filters", arg);
 };
@@ -72,3 +80,6 @@ export const searchFilters = async (arg) => {
 export const listProductBy = async (sort,order,limit) => {
   return await axios.post("http://localhost:5001/api/productby", {sort,order,limit});
 };
+
+export const getRelatedProducts = (productId, limit = 6) =>
+  axios.get(`${API}/products/${productId}/related`, { params: { limit } });

@@ -39,24 +39,31 @@ exports.create = async (req, res) => {
     res.status(500).json({ message: "Server error" })
   }
 }
+
 exports.list = async (req, res) => {
   try {
-    // code
-    const { count } = req.params
+    const { count } = req.params; // มาจาก /products/:count
+    let take = parseInt(count, 10);
+
+    if (!Number.isFinite(take) || take <= 0) take = 6;   // ค่า default
+    if (take > 100) take = 100;                           // กันยิงเยอะเกิน
+
     const products = await prisma.product.findMany({
-      take: parseInt(count),
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
+      take,
       include: {
         category: true,
-        images: true
-      }
-    })
-    res.send(products)
+        images: true, // ถ้า schema ไม่มี relation 'images' ให้ลบบรรทัดนี้ทิ้ง
+      },
+    });
+
+    res.json(products);
   } catch (err) {
-    console.log(err)
-    res.status(500).json({ message: "Server error" })
+    console.error(err);
+    res.status(500).json({ message: 'List products failed' });
   }
-}
+};
+
 exports.read = async (req, res) => {
   try {
     // code

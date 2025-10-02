@@ -1,4 +1,3 @@
-// server_nopporn/controllers/adminPos.js
 const prisma = require('../config/prisma');
 
 function readQuery(obj, ...keys) {
@@ -12,7 +11,6 @@ function readQuery(obj, ...keys) {
 const isIntString = (s) => /^\d+$/.test(s || '');
 
 
-// --- ค้นหาสินค้า (รับ q | productname | productid | name | id) ---
 exports.searchProductsForPos = async (req, res) => {
   try {
     const q = readQuery(req.query, 'q', 'productname', 'productid', 'name', 'id');
@@ -20,11 +18,7 @@ exports.searchProductsForPos = async (req, res) => {
 
     const OR = [];
     if (isIntString(q)) OR.push({ id: Number(q) });
-    // ❌ ตัด mode ออก เพื่อรองรับคอนเนคเตอร์ที่ไม่ซัพพอร์ต
     OR.push({ title: { contains: q } });
-    // ถ้ามี code/sku ใน schema ให้เปิดใช้ได้
-    // OR.push({ code: { contains: q } });
-    // OR.push({ sku:  { contains: q } });
 
     const products = await prisma.product.findMany({
       where: { OR },
@@ -40,7 +34,6 @@ exports.searchProductsForPos = async (req, res) => {
   }
 };
 
-// --- ค้นหาผู้ใช้ (รับ q | email | id | code | phone) ---
 exports.searchUsersForPos = async (req, res) => {
   try {
     const q = readQuery(req.query, 'q', 'email', 'id', 'code', 'phone');
@@ -49,9 +42,6 @@ exports.searchUsersForPos = async (req, res) => {
     const OR = [];
     if (isIntString(q)) OR.push({ id: Number(q) });
     OR.push({ email: { contains: q } });
-    // ถ้ามี field อื่น ๆ ใน schema ของคุณ
-    // OR.push({ code:  { contains: q } });
-    // OR.push({ phone: { contains: q } });
 
     const users = await prisma.user.findMany({
       where: { OR },
@@ -67,13 +57,11 @@ exports.searchUsersForPos = async (req, res) => {
   }
 };
 
-// ✅ เขียนแถว analytics + กันนับซ้ำ (ใช้ใน transaction เท่านั้น)
 async function logOrderAnalytics(tx, order) {
   const customerID = order.customer?.code ?? String(order.customerId);
   const orderID    = String(order.id);
   const orderDate  = order.updatedAt ?? new Date();
 
-  // นับเฉพาะรายการที่ยังไม่เคยนับ
   const itemsToCount = (order.orderItems || []).filter((it) => !it.counted);
 
   for (const it of itemsToCount) {
@@ -89,7 +77,6 @@ async function logOrderAnalytics(tx, order) {
         productID,
         orderID,
         orderDate,
-        // ถ้าต้องการยอดต่อแถว: Number(it.price) * Number(it.quantity)
         price: Number(it.price),
         frequency: prev + 1,
       },
@@ -112,7 +99,6 @@ exports.createManualOrder = async (req, res) => {
       return res.status(400).json({ message: 'items must not be empty' });
     }
 
-    // ตรวจสอบสินค้า + เตรียมข้อมูลบรรทัด
     const productIds = [...new Set(items.map((i) => Number(i.productId)))];
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
@@ -125,12 +111,11 @@ exports.createManualOrder = async (req, res) => {
       const qty = Math.max(1, Number(i.quantity || 1));
       const base = productMap.get(pid);
       if (!base) throw new Error(`product ${pid} not found`);
-      // ใช้ราคา ณ ขณะขาย (ถ้าไม่ส่งมาก็ใช้ราคาปัจจุบันของสินค้า)
+
       const price = i.price != null ? Number(i.price) : Number(base.price);
       return { productId: pid, quantity: qty, price };
     });
 
-    // ตรวจสต๊อกแบบคร่าว ๆ (ถ้าอยาก block ให้ห้ามติดลบ)
     for (const ln of lines) {
       const base = productMap.get(ln.productId);
       if (base.quantity < ln.quantity) {
@@ -142,14 +127,13 @@ exports.createManualOrder = async (req, res) => {
       (s, l) => s + Number(l.price) * Number(l.quantity),
       0
     );
-    const enumStatus = String(status || 'APPROVED').toUpperCase(); // POS ส่วนใหญ่ถือว่าอนุมัติทันที
+    const enumStatus = String(status || 'APPROVED').toUpperCase();
 
     const created = await prisma.$transaction(async (tx) => {
-      // สร้าง Order + OrderItems
       const order = await tx.order.create({
         data: {
           customer: { connect: { id: Number(customerId) } },
-          status: enumStatus, // 'APPROVED' | 'PENDING' | 'CANCELED'
+          status: enumStatus,
           total,
           orderItems: {
             create: lines.map((l) => ({

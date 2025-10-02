@@ -1,6 +1,5 @@
 const prisma = require('../config/prisma');
 
-// แสดงรายการทั้งหมด
 exports.listAssoc = async (req, res) => {
   const rows = await prisma.productAssociation.findMany({
     include: {
@@ -12,7 +11,6 @@ exports.listAssoc = async (req, res) => {
   res.json(rows);
 };
 
-// สร้าง (ถ้ามีคู่นี้อยู่แล้วจะอัปเดตแทน)
 exports.createAssoc = async (req, res) => {
   let { name, sourceProductId, targetProductId, weight = 1, isActive = true } = req.body;
   sourceProductId = Number(sourceProductId);
@@ -26,7 +24,6 @@ exports.createAssoc = async (req, res) => {
     return res.status(400).json({ message: 'source and target must be different' });
   }
 
-  // upsert ตาม unique([sourceProductId, targetProductId])
   const assoc = await prisma.productAssociation.upsert({
     where: { sourceProductId_targetProductId: { sourceProductId, targetProductId } },
     update: { name, weight, isActive },
@@ -43,7 +40,6 @@ exports.createAssoc = async (req, res) => {
   res.status(201).json(row);
 };
 
-// แก้ไข
 exports.updateAssoc = async (req, res) => {
   const id = Number(req.params.id);
   const { name, sourceProductId, targetProductId, weight, isActive } = req.body;
@@ -65,7 +61,6 @@ exports.updateAssoc = async (req, res) => {
   res.json(row);
 };
 
-// ลบ
 exports.deleteAssoc = async (req, res) => {
   await prisma.productAssociation.delete({ where: { id: Number(req.params.id) } });
   res.json({ ok: true });

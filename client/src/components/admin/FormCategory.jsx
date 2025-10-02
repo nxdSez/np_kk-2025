@@ -4,10 +4,8 @@ import { createCategory, removeCategory } from "../../api/Category";
 import { toast } from "react-toastify";
 
 const FormCategory = () => {
-  // JS
   const token = useNpStore((state) => state.token);
   const [name, setName] = useState("");
-  // const [categories, setCategories] = useState([]);
 
   const categories = useNpStore((state) => state.categories);
   const getCategory = useNpStore((state) => state.getCategory);

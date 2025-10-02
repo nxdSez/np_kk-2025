@@ -5,7 +5,7 @@ const router = express.Router()
 const { create, list, remove, listby, searchFilters, update, read, createImages, removeImage } = require('../controllers/conproduct')
 const { authCheck, adminOnly, staffOnly } = require('../middleware/authCheck')
 const { getRelatedProducts, getRelatedForMany } = require('../controllers/productPublic');
-const { getMyLatestOrderRecommendations } = require('../controllers/productPublic');
+const { getMyLatestOrderRecommendations, getMyRecommendations } = require('../controllers/productPublic');
 // @Endpoint http://localhost:5001/api/product
 router.post('/product', authCheck, staffOnly, create)
 router.put('/product/:id', authCheck, staffOnly, update)
@@ -16,7 +16,7 @@ router.post('/productby', listby)
 router.post('/search/filters', searchFilters)
 router.get('/products/:productId/related', getRelatedProducts);
 router.get('/products/related', getRelatedForMany);
-router.get('/me/recommendations', authCheck, getMyLatestOrderRecommendations);
+router.get('/me/recommendations', authCheck, getMyRecommendations);
 // @Endpoint http://localhost:5001/api/images
 router.post('/images', authCheck, staffOnly, createImages)
 router.post('/removeimage', authCheck, staffOnly, removeImage)

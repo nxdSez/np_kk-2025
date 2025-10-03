@@ -22,6 +22,9 @@ const Home = () => {
       <AssociatedGrid
         className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 justify-items-center"
         products={products}
+        personalize
+        lookback = {5}
+        inStock = {2}
       />
 
       <p className="text-xl text-center font-bold my-4">สินค้าขายดี</p>

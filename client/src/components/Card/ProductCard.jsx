@@ -10,8 +10,8 @@ const ProductCard = ({ item, product }) => {
   const p = item ?? product ?? {};
   const actionAddtoCart = useNpStore((state) => state.actionAddtoCart);
 
-  const imgSrc = p?.images?.[0]?.url || "/no-image.png";
-
+  const imgSrc =
+    p?.images?.[0]?.url || p?.images?.[0]?.secure_url || "/no-image.png";
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.5 }}

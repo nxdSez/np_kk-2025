@@ -12,7 +12,7 @@ const NewProduct = () => {
   }, []);
 
   const loadNewProduct = async () => {
-    listProductBy("createdAt", "desc", 6)
+    listProductBy("createdAt", "desc", 7)
       .then((res) => {
         setNewProduct(res.data);
       })

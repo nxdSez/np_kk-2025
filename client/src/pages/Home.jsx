@@ -19,13 +19,16 @@ const Home = () => {
 
       {/* แทนกริดเดิมด้วย AssociatedGrid (ถ้าไม่มีของเชื่อม จะ fallback เป็น products เดิม) */}
       <p className="text-xl text-center font-bold my-4">แนะนำสินค้าสำหรับคุณ</p>
+
       <AssociatedGrid
-        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 justify-items-center"
+        className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-x-2 gap-y-2"
         products={products}
         personalize
         lookback = {5}
-        inStock = {2}
-      />
+        inStock = {0}
+        limit={7}
+        useSwiper
+        />
 
       <p className="text-xl text-center font-bold my-4">สินค้าขายดี</p>
       <BestSeller />

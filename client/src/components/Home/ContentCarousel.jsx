@@ -42,7 +42,7 @@ const ContentCarousel = () => {
           )
         }
       </Swiper>
-      <Swiper
+      {/* <Swiper
         slidesPerView={5}
         spaceBetween={10}
         pagination={true}
@@ -62,7 +62,7 @@ const ContentCarousel = () => {
             </SwiperSlide>
           )
         }
-      </Swiper>
+      </Swiper> */}
     </div>
   );
 };

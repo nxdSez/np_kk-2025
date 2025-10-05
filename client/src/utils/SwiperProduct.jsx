@@ -6,20 +6,32 @@ import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
 
-import { Pagination, Autoplay, Navigation } from "swiper/modules";
+import { Pagination, Autoplay, Navigation, Scrollbar } from "swiper/modules";
 
 const SwiperProduct = ({ children }) => {
   return (
     <Swiper
-      slidesPerView={5}
+      slidesPerView={6}
       spaceBetween={10}
-      pagination={true}
+      // pagination={true}
       navigation={true}
-      modules={[Pagination, Autoplay, Navigation]}
-      className="object-cover rounded-md mt-4"
+      grid={{
+        rows: 6,
+      }}
+      scrollbar={{
+        hide: true
+      }}
+      modules={[Pagination, Autoplay, Navigation ,Scrollbar]}
+      className="mySwiper object-cover rounded-md mt-4"
       autoplay={{
-        delay: 1000,
+        delay: 3000,
         disableOnInteraction: false,
+        pauseOnMouseEnter: true
+      }}
+      onSwiper={(Swiper) =>{
+        if (Swiper?.autoplay?.running === false) {
+          Swiper.autoplay.start()
+        }
       }}
       breakpoints={{
           320: {

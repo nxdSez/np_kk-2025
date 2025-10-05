@@ -12,7 +12,7 @@ const Bestseller = () => {
   }, []);
 
   const loadBestseller = async () => {
-    listProductBy("sold", "desc", 6)
+    listProductBy("sold", "desc", 7)
       .then((res) => {
         setBestseller(res.data);
       })

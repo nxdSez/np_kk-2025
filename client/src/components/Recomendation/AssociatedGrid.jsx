@@ -5,16 +5,19 @@ import {
   getMyLatestRecommendations,
 } from "../../api/Product";
 import ProductCard from "../Card/ProductCard";
+import SwiperProduct from "../../utils/SwiperProduct";
+import { SwiperSlide } from "swiper/react";
 
 export default function AssociatedGrid({
   products = [],
-  limit = 12,
+  limit = 7,
   personalize = false,
-  // รับทั้งสองแบบ เพื่อกันสะกดไม่ตรง
   inStock: inStockProp = true,
-  instock, // เผื่อคุณส่ง instock={1}
-  lookback = 3,
+  instock,
+  lookback = 5,
+  onItems,
   className = "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4",
+  useSwiper,
 }) {
   const token = useNpStore((s) => s.token);
   const [items, setItems] = useState(null);
@@ -38,31 +41,46 @@ export default function AssociatedGrid({
       try {
         if (personalize) {
           if (!token) {
-            console.warn(
-              "[AssociatedGrid] personalize=true แต่ไม่มี token → จะไม่เรียก /me/recommendations"
-            );
+            console.warn("[AssociatedGrid] personalize=true แต่ไม่มี token");
           } else {
             // ส่ง inStock เป็น 1/0 เสมอ
             const res = await getMyLatestRecommendations(token, {
               limit,
               lookback,
-              inStock, // ใน API function จะ map เป็น 1/0 ให้อีกชั้น
+              inStock:
+                typeof instock !== "undefined"
+                  ? Boolean(instock)
+                  : Boolean(inStockProp),
             });
-            if (!cancelled) setItems(Array.isArray(res.data) ? res.data : []);
+            const data = Array.isArray(res.data) ? res.data : [];
+            if (!cancelled) {
+              setItems(data);
+              if (typeof onItems === "function") onItems(data);
+            }
             return;
           }
         }
 
         // โหมด non-personalized: ใช้ ids จาก products
         if (sourceIds.length === 0) {
-          if (!cancelled) setItems([]);
+          if (!cancelled) {
+            setItems([]);
+            if (typeof onItems === "function") onItems([]);
+          }
           return;
         }
         const res = await getRelatedForMany(sourceIds, limit);
-        if (!cancelled) setItems(Array.isArray(res.data) ? res.data : []);
+        const data = Array.isArray(res.data) ? res.data : [];
+        if (!cancelled) {
+          setItems(data);
+          if (typeof onItems === "function") onItems([]);
+        }
       } catch (e) {
         console.error("[AssociatedGrid] fetch error:", e);
-        if (!cancelled) setItems([]);
+        if (!cancelled) {
+          setItems([]);
+          if (typeof onItems === "function") onItems([]);
+        }
       }
     })();
 
@@ -75,11 +93,36 @@ export default function AssociatedGrid({
     limit,
     lookback,
     inStock, // เปลี่ยนจะยิงใหม่
+    inStockProp,
     sourceIds.join(","),
   ]);
 
-  const list = items && items.length > 0 ? items : products || [];
+  const isLoading = items === null;
+  const list = Array.isArray(items) ? items : [];
   const clean = list.filter(Boolean);
+
+  if (useSwiper) {
+    return (
+      <SwiperProduct>
+        {clean.map((p, idx) => (
+          <SwiperSlide
+            key={p?.id ?? `p-${idx}`}
+            className="flex justify-center items-center"
+          >
+            <ProductCard item={p} />
+          </SwiperSlide>
+        ))}
+      </SwiperProduct>
+    );
+  }
+
+  if (isLoading) {
+    return null;
+  }
+
+  if (clean.length === 0) {
+    return <p className="text-center text-sm text-gray-500">ยังไม่มีคำแนะนำ</p>;
+  }
 
   return (
     <div className={className}>

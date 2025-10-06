@@ -22,7 +22,6 @@ import Payment from "../pages/user/Payment";
 import ManageOrder from "../pages/admin/ManageOrder";
 import PosOrder from "../components/admin/PosOrder";
 import AssocRules from "../pages/admin/AssocRule";
-
 const router = createBrowserRouter([
   {
     path: "/",
@@ -42,6 +41,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Dashboard /> },
       { path: "category", element: <Category /> },
+      { path: "category", element: <Dashboard /> },
       { path: "product", element: <Product /> },
       { path: "product/:id", element: <EditProduct /> },
       { path: "manage", element: <Manage /> },

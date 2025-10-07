@@ -34,8 +34,11 @@ const SwiperProduct = ({ children }) => {
         }
       }}
       breakpoints={{
-          320: {
-            slidesPerView: 2,
+          0: {
+            slidesPerView: 1.2
+          },
+          480: {
+            slidesPerView: 2.2,
             spaceBetween: 10,
           },
           640: {

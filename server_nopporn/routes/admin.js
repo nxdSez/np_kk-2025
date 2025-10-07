@@ -20,4 +20,6 @@ router.get('/admin/search-products', authCheck, staffOnly, searchProductsForPos)
 router.get('/admin/search-users', authCheck, staffOnly, searchUsersForPos);
 router.post('/admin/manual-orders', authCheck, staffOnly, createManualOrder);
 
+
+
 module.exports = router

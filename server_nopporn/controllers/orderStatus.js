@@ -5,7 +5,7 @@ const prisma = require('../config/prisma');
 const toEnumString = (input) => {
   const s = String(input || '').trim().toUpperCase();
   if (s === 'APPROVED' || s === 'ตรวจสอบแล้ว') return 'APPROVED';
-  if (s === 'CANCELED' || s === 'CANCELLED' || s === 'ยกเลิก') return 'CANCELED';
+  if (s === 'CANCELLED' || s === 'ยกเลิก') return 'CANCELLED';
   return 'PENDING'; // default
 };
 

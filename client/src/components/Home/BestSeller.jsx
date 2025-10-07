@@ -8,27 +8,26 @@ const Bestseller = () => {
   const [bestseller, setBestseller] = useState([]);
 
   useEffect(() => {
-    loadBestseller();
+    listProductBy("sold", "desc", 7)
+      .then((res) => setBestseller(res.data))
+      .catch(console.log);
   }, []);
 
-  const loadBestseller = async () => {
-    listProductBy("sold", "desc", 7)
-      .then((res) => {
-        setBestseller(res.data);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  };
+  if (!bestseller.length) return null;
 
   return (
-    <SwiperProduct>
-      {bestseller.map((item, index) => (
-        <SwiperSlide key={index} className="flex justify-center items-center">
-          <ProductCard item={item} key={index} />
-        </SwiperSlide>
-      ))}
-    </SwiperProduct>
+    <section className="mt-8">
+      <div className="flex items-end justify-between mb-3">
+        <h2 className="text-xl font-semibold">สินค้าขายดี</h2>
+      </div>
+      <SwiperProduct>
+        {bestseller.map((item, index) => (
+          <SwiperSlide key={index} className="flex justify-center">
+            <ProductCard item={item} />
+          </SwiperSlide>
+        ))}
+      </SwiperProduct>
+    </section>
   );
 };
 

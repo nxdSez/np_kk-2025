@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-const EXPIRES = "10";
+const EXPIRES = "10m";
 
 exports.signCheckout = (payload) =>
   jwt.sign(payload, process.env.CHECKOUT_SIGNING_KEY, { expiresIn: EXPIRES });

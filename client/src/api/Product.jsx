@@ -1,98 +1,55 @@
+// client/src/api/Product.jsx  (วางทับไฟล์เดิม)
 import axios from "axios";
 
-const API = "http://localhost:5001/api";
+const API = import.meta.env.VITE_API_BASE || "http://localhost:5001/api";
 
-const cfg = (token, extra = {}) => ({
-  headers: { Authorization: `Bearer ${token}` },
-  ...extra,
-});
+const authHeaders = (token) => (token ? { Authorization: `Bearer ${token}` } : {});
 
-export const createProduct = async (token, form) => {
-  return await axios.post("http://localhost:5001/api/product", form, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-};
+// ------- Protected (ต้อง token) -------
+export const createProduct = (token, form) =>
+  axios.post(`${API}/product`, form, { headers: authHeaders(token) });
 
-export const listProduct = async (count = 20) => {
-  return await axios.get("http://localhost:5001/api/products/" + count);
-};
+export const deleteProduct = (token, id) =>
+  axios.delete(`${API}/product/${id}`, { headers: authHeaders(token) });
 
-export const readProduct = async (token, id) => {
-  return await axios.get("http://localhost:5001/api/product/" + id, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-};
+export const updateProduct = (token, id, form) =>
+  axios.put(`${API}/product/${id}`, form, { headers: authHeaders(token) });
 
-export const deleteProduct = async (token, id) => {
-  return await axios.delete("http://localhost:5001/api/product/" + id, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-};
+export const uploadFiles = (token, image) =>
+  axios.post(`${API}/images`, { image }, { headers: authHeaders(token) });
 
-export const updateProduct = async (token, id, form) => {
-  return await axios.put("http://localhost:5001/api/product/" + id, form, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-};
-
-export const uploadFiles = async (token, form) => {
-  return await axios.post(
-    "http://localhost:5001/api/images",
-    {
-      image: form,
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-};
-
-export const removeFiles = async (token, public_id) => {
-  return await axios.post(
-    "http://localhost:5001/api/removeimage",
-    {
-      public_id,
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-};
+export const removeFiles = (token, public_id) =>
+  axios.post(`${API}/removeimage`, { public_id }, { headers: authHeaders(token) });
 
 export const getMyLatestRecommendations = (
   token,
   { limit = 12, lookback = 3, inStock = true } = {}
-) => {
-  const inStockParam = inStock ? 1 : 0; // ← สำคัญ
-  return axios.get(`${API}/me/recommendations`, {
-    params: { limit, lookback, inStock: inStockParam },
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+) =>
+  axios.get(`${API}/me/recommendations`, {
+    params: { limit, lookback, inStock: inStock ? 1 : 0 },
+    headers: authHeaders(token),
   });
+
+// ------- Public (ไม่ต้อง token) -------
+export const listProduct = (count = 20) =>
+  axios.get(`${API}/products/${count}`);
+
+// readProduct: รองรับทั้ง readProduct(id) และ readProduct(token, id) (ของเดิม)
+export const readProduct = (a, b) => {
+  let id, token;
+  if (typeof a === "string" || typeof a === "number") {
+    id = a; token = b ?? null;
+  } else {
+    token = a ?? null; id = b;
+  }
+  return axios.get(`${API}/product/${id}`, { headers: authHeaders(token) });
 };
 
-export const searchFilters = async (arg) => {
-  return await axios.post("http://localhost:5001/api/search/filters", arg);
-};
+export const searchFilters = (arg) =>
+  axios.post(`${API}/search/filters`, arg);
 
-export const listProductBy = async (sort, order, limit) => {
-  return await axios.post("http://localhost:5001/api/productby", {
-    sort,
-    order,
-    limit,
-  });
-};
+export const listProductBy = (sort, order, limit) =>
+  axios.post(`${API}/productby`, { sort, order, limit });
 
 export const getRelatedProducts = (productId, limit = 6) =>
   axios.get(`${API}/products/${productId}/related`, { params: { limit } });

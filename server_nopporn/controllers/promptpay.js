@@ -1,80 +1,146 @@
-// controllers/promptpay.controller.js
+// server_nopporn/controllers/promptpay.js
+require("dotenv").config();
 const prisma = require("../config/prisma");
-const { createPromptPayQR } = require("../utils/promptpay");
 const jwt = require("jsonwebtoken");
+const { createPromptPayQR } = require("../utils/promptpay");
 
-// อายุ token สำหรับ checkout (ปรับได้)
-const EXPIRES = "10m";
+// ====== CONFIG ======
+const EXPIRES = process.env.CHECKOUT_EXPIRES || "10m"; // ใช้จริง
+const SIGN_KEY =
+  process.env.CHECKOUT_SIGNING_KEY ||
+  process.env.CHECKOUT_SECRET ||
+  process.env.SECRET; // ต้องมีอย่างน้อยหนึ่ง
 
-// เซ็น/ตรวจ token (ไม่ต้องสร้างไฟล์ใหม่)
+// คีย์สำหรับ verify JWT ล็อกอิน (ลองหลายๆ ตัวที่โปรเจ็กต์คุณอาจใช้)
+const JWT_SECRETS = [
+  process.env.JWT_SECRET,
+  process.env.ACCESS_TOKEN_SECRET,
+  process.env.AUTH_JWT_SECRET,
+  process.env.SECRET, // โปรเจ็กต์คุณมี SECRET
+].filter(Boolean);
+
+// ====== HELPERS ======
+const toInt = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
+function tryVerifyLoginToken(token) {
+  if (!token) return null;
+  for (const s of JWT_SECRETS) {
+    try {
+      const p = jwt.verify(token, s);
+      const id = toInt(p?.id || p?.userId || p?.uid);
+      if (id !== null) return id;
+    } catch (_) {}
+  }
+  return null;
+}
+
+function getUserId(req) {
+  // 1) จาก middleware
+  if (req.user?.id) {
+    const id = toInt(req.user.id);
+    if (id !== null) return id;
+  }
+
+  // 2) Authorization: Bearer xxx
+  const auth = req.headers?.authorization || req.headers?.Authorization;
+  const bearer = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
+  const idFromBearer = tryVerifyLoginToken(bearer);
+  if (idFromBearer !== null) return idFromBearer;
+
+  // 3) Cookie token
+  const cookieToken = req.cookies?.token || req.cookies?.accessToken;
+  const idFromCookie = tryVerifyLoginToken(cookieToken);
+  if (idFromCookie !== null) return idFromCookie;
+
+  // 4) Dev override
+  if (process.env.NODE_ENV !== "production") {
+    const dev =
+      req.headers["x-user-id"] || req.body?.customerId || req.query?.customerId;
+    const devId = toInt(dev);
+    if (devId !== null) return devId;
+  }
+
+  return null;
+}
+
 function signCheckout(payload) {
-  return jwt.sign(payload, process.env.CHECKOUT_SIGNING_KEY, { expiresIn: EXPIRES });
+  if (!SIGN_KEY) throw new Error("CHECKOUT_SIGNING_KEY is missing");
+  return jwt.sign(payload, SIGN_KEY, { expiresIn: EXPIRES }); // ✅ ใช้ EXPIRES จริง
 }
 function verifyCheckout(token) {
-  return jwt.verify(token, process.env.CHECKOUT_SIGNING_KEY);
+  if (!SIGN_KEY) throw new Error("CHECKOUT_SIGNING_KEY is missing");
+  return jwt.verify(token, SIGN_KEY);
 }
 
-/**
- * 1) ขอ QR จาก "ตะกร้า" โดยยังไม่สร้าง Order/Payment
- * POST /api/promptpay/intent-from-cart
- */
-exports.intentFromCart = async (req, res, next) => {
+// ====== CONTROLLERS ======
+
+// POST /api/promptpay/intent-from-cart
+exports.intentFromCart = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req); // number หรือ null
+    if (userId === null) return res.status(401).json({ ok: false, message: "unauthorized" });
 
     const cart = await prisma.cart.findFirst({
-      where: { customerId: userId },
-      include: { products: { include: { product: true } } }, // ProductOnCart[]
+      where: { customerId: userId }, // Int
+      include: { products: { include: { product: true } } },
     });
     if (!cart || cart.products.length === 0) {
-      return res.status(400).json({ message: "Cart is empty" });
+      return res.status(400).json({ ok: false, message: "Cart is empty" });
     }
 
-    // snapshot (บาท)
     const items = cart.products.map((it) => ({
-      productId: it.productId,
+      productId: toInt(it.productId),
       title: it.product.title,
-      unitPrice: Number(it.product.price), // บาท (Float)
+      unitPrice: Number(it.product.price),
       qty: Number(it.count),
     }));
+
     const total = items.reduce((s, it) => s + it.unitPrice * it.qty, 0);
 
-    // สร้าง QR ด้วยยอด "บาท"
-    const { payload, dataUrl } = await createPromptPayQR({
-      promptpayId: process.env.PROMPTPAY_ID,
+    const target =
+      req.body?.target ||
+      process.env.PROMPTPAY_PHONE ||
+      process.env.PROMPTPAY_TARGET ||
+      process.env.PROMPTPAY_ID;
+
+    const { payload } = createPromptPayQR({
+      target,
       amountTHB: total,
+      message: "Nopporn Trading",
     });
 
-    // ออก token (ไม่ลง DB)
     const checkoutToken = signCheckout({ uid: userId, items, total, v: 1 });
-
-    res.json({ qrDataUrl: dataUrl, payload, checkoutToken, items, total });
+    return res.json({ ok: true, payload, checkoutToken, items, total, target });
   } catch (e) {
-    next(e);
+    const status = e.status || 500;
+    return res.status(status).json({ ok: false, error: e.message || "Internal Error" });
   }
 };
 
-/**
- * 2) แนบสลิป + "ค่อย" สร้าง Order/OrderItems/Payment ในครั้งเดียว (Transaction)
- * POST /api/promptpay/confirm
- * { checkoutToken, slipUrl, transactionRef? }
- */
-exports.confirm = async (req, res, next) => {
+// POST /api/promptpay/confirm
+exports.confirm = async (req, res) => {
   try {
     const { checkoutToken, slipUrl, transactionRef } = req.body;
     if (!checkoutToken || !slipUrl) {
-      return res.status(400).json({ message: "missing fields" });
+      return res.status(400).json({ ok: false, message: "missing fields" });
     }
 
     let data;
     try {
-      data = verifyCheckout(checkoutToken);
+      data = verifyCheckout(checkoutToken); // ถ้า EXPIRES หมดจะโยน error
     } catch {
-      return res.status(400).json({ message: "checkout token invalid/expired" });
+      return res.status(400).json({ ok: false, message: "checkout token invalid/expired" });
     }
 
-    // revalidate ราคา (กัน client แก้)
-    const productIds = data.items.map((i) => i.productId);
+    const uid = toInt(data.uid);
+    if (uid === null) {
+      return res.status(400).json({ ok: false, message: "invalid uid in token" });
+    }
+
+    const productIds = data.items.map((i) => toInt(i.productId));
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
       select: { id: true, price: true },
@@ -82,50 +148,46 @@ exports.confirm = async (req, res, next) => {
     const priceMap = Object.fromEntries(products.map((p) => [p.id, Number(p.price)]));
 
     const recomputedTotal = data.items.reduce(
-      (s, it) => s + (priceMap[it.productId] ?? it.unitPrice) * it.qty,
+      (s, it) => s + (priceMap[toInt(it.productId)] ?? Number(it.unitPrice)) * Number(it.qty),
       0
     );
-    const finalTotal = recomputedTotal; // ใช้ราคาล่าสุด; ถ้าจะล็อกยอดตอนสแกน => ใช้ data.total
 
     const created = await prisma.$transaction(async (tx) => {
-      // สร้าง Order + OrderItems (บาท)
       const order = await tx.order.create({
         data: {
-          customerId: data.uid,
-          status: "PENDING", // ใช้ค่าที่มีจริงใน enum ของคุณ
-          total: finalTotal,
+          customerId: uid,
+          status: "PENDING",
+          total: recomputedTotal,
           orderItems: {
             create: data.items.map((it) => ({
-              productId: it.productId,
-              quantity: it.qty,              // ถ้าสคีมาคุณใช้ชื่อ qty ให้คงตามนี้; ถ้าเป็น qty/price ตรงอยู่แล้วโอเค
-              price: priceMap[it.productId] ?? it.unitPrice, // บาท
+              productId: toInt(it.productId),
+              quantity: Number(it.qty),
+              price: priceMap[toInt(it.productId)] ?? Number(it.unitPrice),
             })),
           },
         },
         include: { orderItems: true },
       });
 
-      // สร้าง Payment (สตางค์)
       const payment = await tx.payment.create({
         data: {
           method: "PROMPTPAY_MANUAL",
           status: "PENDING_REVIEW",
-          amount: Math.round(finalTotal * 100),
+          amount: Math.round(recomputedTotal * 100), // สตางค์
           slipUrl,
           transactionRef: transactionRef || null,
           order: { connect: { id: order.id } },
         },
       });
 
-      // ล้างตะกร้า
-      const cart = await tx.cart.findFirst({ where: { customerId: data.uid } });
+      const cart = await tx.cart.findFirst({ where: { customerId: uid } });
       if (cart) await tx.productOnCart.deleteMany({ where: { cartId: cart.id } });
 
       return { orderId: order.id, paymentId: payment.id };
     });
 
-    res.json({ ok: true, ...created });
+    return res.json({ ok: true, ...created });
   } catch (e) {
-    next(e);
+    return res.status(500).json({ ok: false, error: e.message || "Internal Error" });
   }
 };

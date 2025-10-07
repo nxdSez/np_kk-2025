@@ -1,23 +1,42 @@
+// src/pages/Payment.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useNpStore from "../../store/nopporn-stores";
 
-// helper เรียก API (อาศัย proxy Vite ให้ยิง /api มายัง backend)
-async function api(path, { method = "GET", token, body } = {}) {
+async function api(path, { method = "GET", token, userId, body } = {}) {
+  const rawStored =
+    token || localStorage.getItem("token") || sessionStorage.getItem("token");
+  const storedToken =
+    rawStored && rawStored !== "null" && rawStored !== "undefined"
+      ? rawStored
+      : null;
+
+  const isDev = import.meta.env.MODE !== "production";
+
+  const headers = {
+    "Content-Type": "application/json",
+    ...(storedToken ? { Authorization: `Bearer ${storedToken}` } : {}),
+    ...(isDev && userId ? { "x-user-id": String(userId) } : {}),
+  };
+
   const res = await fetch(`/api${path}`, {
     method,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers,
     body: body ? JSON.stringify(body) : undefined,
+    credentials: "include",
   });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || json?.ok === false) {
+    const msg = json?.error || json?.message || `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  return json;
 }
 
 export default function Payment() {
   const token = useNpStore((s) => s.token);
+  const user = useNpStore((s) => s.user);
   const clearCart = useNpStore((s) => s.clearCart);
   const navigate = useNavigate();
 
@@ -27,57 +46,107 @@ export default function Payment() {
   const [uploading, setUploading] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
-  // snapshot จาก cart (ยังไม่ลง DB)
-  const [items, setItems] = useState([]); // [{productId,title,unitPrice,qty}]
-  const [total, setTotal] = useState(0);  // บาท (Float)
+  const [items, setItems] = useState([]);
+  const [total, setTotal] = useState(0);
   const [checkoutToken, setCheckoutToken] = useState("");
 
   useEffect(() => {
     (async () => {
       try {
-        if (!token) {
+        if (!user?.id && !token) {
           navigate("/login");
           return;
         }
-        // ขอ QR + snapshot จากตะกร้า (ไม่สร้าง order/DB)
         const r = await api(`/promptpay/intent-from-cart`, {
           method: "POST",
           token,
+          userId: user?.id,
         });
-        setQrDataUrl(r.qrDataUrl);
+
+        const qrUrl =
+          r.qrDataUrl ||
+          (r.payload
+            ? `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(
+                r.payload
+              )}`
+            : "");
+
+        setQrDataUrl(qrUrl);
         setItems(r.items || []);
         setTotal(Number(r.total || 0));
         setCheckoutToken(r.checkoutToken || "");
       } catch (e) {
         console.error(e);
-        alert("เตรียมการชำระเงินไม่สำเร็จ");
+        alert(`เตรียมการชำระเงินไม่สำเร็จ: ${e.message || e}`);
         navigate("/cart");
       } finally {
         setLoading(false);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, user?.id]);
 
   const orderTotal = useMemo(() => {
     if (typeof total === "number" && total > 0) return total;
-    return (items || []).reduce((s, it) => s + Number(it.unitPrice || 0) * Number(it.qty || 0), 0);
+    return (items || []).reduce(
+      (s, it) =>
+        s +
+        Number(it.unitPrice ?? it.price ?? it.product?.price ?? 0) *
+          Number(it.qty ?? it.quantity ?? it.count ?? 0),
+      0
+    );
   }, [items, total]);
 
-  // อัปโหลดสลิปขึ้น Cloudinary (unsigned)
+  async function handleConfirm() {
+    if (!checkoutToken) {
+      alert("ไม่มีข้อมูลคำสั่งซื้อ กรุณารีเฟรชหน้าอีกครั้ง");
+      return;
+    }
+    if (!slipUrl) {
+      alert("กรุณาแนบสลิปก่อนกดปุ่มยืนยัน");
+      return;
+    }
+    setConfirming(true);
+    try {
+      await api(`/promptpay/confirm`, {
+        method: "POST",
+        token,
+        userId: user?.id,
+        body: { checkoutToken, slipUrl },
+      });
+      clearCart?.();
+      alert("ส่งสลิปแล้ว: รอแอดมินตรวจสอบ");
+      navigate("/user/history");
+    } catch (err) {
+      console.error(err);
+      const msg = err?.message || String(err);
+      alert(`ยืนยันไม่สำเร็จ: ${msg}`);
+      // ✅ ถ้าโทเคนไม่ถูกต้อง/หมดอายุ ให้ย้อนกลับ 1 หน้า
+      {
+        navigate(-1);
+      }
+    } finally {
+      setConfirming(false);
+    }
+  }
+
   async function uploadToCloudinary(file) {
     const cloud = import.meta.env.VITE_CLOUDINARY_CLOUD;
     const preset = import.meta.env.VITE_CLOUDINARY_UNSIGNED_PRESET;
-    if (!cloud || !preset) throw new Error("ยังไม่ได้ตั้งค่า Cloudinary unsigned preset");
+    if (!cloud || !preset)
+      throw new Error("ยังไม่ได้ตั้งค่า Cloudinary unsigned preset");
 
     const form = new FormData();
     form.append("file", file);
     form.append("upload_preset", preset);
 
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloud}/image/upload`, {
-      method: "POST",
-      body: form,
-    });
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloud}/image/upload`,
+      {
+        method: "POST",
+        body: form,
+      }
+    );
     const json = await res.json();
     if (!json.secure_url) throw new Error("อัปโหลดสลิปล้มเหลว");
     return json.secure_url;
@@ -112,15 +181,15 @@ export default function Payment() {
       await api(`/promptpay/confirm`, {
         method: "POST",
         token,
+        userId: user?.id,
         body: { checkoutToken, slipUrl },
       });
       clearCart?.();
       alert("ส่งสลิปแล้ว: รอแอดมินตรวจสอบ");
-      // ถ้าต้องการพาไปหน้าประวัติ ให้เปิดบรรทัดล่างนี้
       navigate("/user/history");
     } catch (err) {
       console.error(err);
-      alert("ยืนยันไม่สำเร็จ");
+      alert(`ยืนยันไม่สำเร็จ: ${err.message || err}`);
     } finally {
       setConfirming(false);
     }
@@ -129,7 +198,9 @@ export default function Payment() {
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto p-4">
-        <div className="bg-gray-100 rounded-lg p-4 border shadow">กำลังเตรียมการชำระเงิน...</div>
+        <div className="bg-green-50/70 dark:bg-green-900/10 text-green-700 dark:text-green-300 rounded-lg p-4 border border-green-100 dark:border-green-800/40 shadow">
+          กำลังเตรียมการชำระเงิน...
+        </div>
       </div>
     );
   }
@@ -139,11 +210,13 @@ export default function Payment() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* สรุปรายการ */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl border shadow p-4">
-            <h2 className="text-lg font-semibold mb-2">สรุปคำสั่งซื้อ</h2>
+          <div className="bg-white dark:bg-gray-200 rounded-xl border shadow p-4">
+            <h2 className="text-lg font-semibold mb-2 text-green-700 dark:text-black">
+              สรุปคำสั่งซื้อ
+            </h2>
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-gray-500 border-b">
+                <tr className="text-left text-black border-b">
                   <th className="py-2">สินค้า</th>
                   <th className="py-2">จำนวน</th>
                   <th className="py-2">ราคา/หน่วย</th>
@@ -153,7 +226,9 @@ export default function Payment() {
               <tbody>
                 {(items || []).map((it, idx) => {
                   const title = it.title ?? it.product?.title ?? "-";
-                  const unit = Number(it.unitPrice ?? it.price ?? it.product?.price ?? 0);
+                  const unit = Number(
+                    it.unitPrice ?? it.price ?? it.product?.price ?? 0
+                  );
                   const qty = Number(it.qty ?? it.quantity ?? it.count ?? 0);
                   return (
                     <tr key={idx} className="border-b">
@@ -166,7 +241,7 @@ export default function Payment() {
                 })}
               </tbody>
             </table>
-            <div className="text-right mt-3 font-semibold">
+            <div className="text-right mt-3 font-semibold text-black dark:text-black">
               ยอดสุทธิ: {orderTotal.toFixed(2)} บาท
             </div>
           </div>
@@ -174,28 +249,56 @@ export default function Payment() {
 
         {/* PromptPay + แนบสลิป + ยืนยัน */}
         <div>
-          <div className="bg-white rounded-xl border shadow p-4 space-y-4">
-            <h2 className="text-lg font-semibold">ชำระเงินด้วย PromptPay</h2>
-            {qrDataUrl ? (
-              <img src={qrDataUrl} alt="PromptPay QR" className="w-56 h-56 border rounded-lg mx-auto" />
-            ) : (
-              <div className="text-sm text-gray-500">กำลังสร้าง QR...</div>
-            )}
+          {/* การ์ดขวา: ทำให้จางลงด้วย border/ring สีอ่อน */}
+          <div className="bg-white dark:bg-gray-300 rounded-xl border border-green-100 shadow p-4 space-y-4 ring-1 ring-green-100/70">
+            <h2 className="text-lg font-semibold text-green-700 dark:text-black">
+              ชำระเงินด้วย PromptPay
+            </h2>
 
-            <p className="text-xs text-gray-500 text-center">
-              * สแกนและโอนตามยอด จากนั้น <b>แนบสลิป</b> แล้วค่อยกดปุ่ม <b>ยืนยัน</b>
+            {/* กล่อง QR เบาจริง ๆ */}
+            <div className="bg-green-50/60 dark:bg-green-900/10 rounded-lg p-4 border border-green-100 dark:border-green-800/40">
+              {qrDataUrl ? (
+                <img
+                  src={qrDataUrl}
+                  alt="PromptPay QR"
+                  className="w-56 h-56 border border-green-100 rounded-lg mx-auto bg-white"
+                />
+              ) : (
+                <div className="text-sm text-gray-500">กำลังสร้าง QR...</div>
+              )}
+            </div>
+
+            <p className="text-xs text-green-700/80 dark:text-black text-center">
+              * สแกนและโอนตามยอด จากนั้น <b>แนบสลิป</b> แล้วค่อยกดปุ่ม{" "}
+              <b>ยืนยัน</b>
             </p>
 
             <div className="space-y-2">
-              <label className="block text-sm">แนบสลิปโอนเงิน (.jpg/.png)</label>
-              <input type="file" accept="image/*" onChange={handleUploadSlip} disabled={uploading} />
-              {slipUrl && <img src={slipUrl} alt="slip" className="w-48 border rounded-md" />}
+              <label className="block text-sm text-green-700 dark:text-black">
+                แนบสลิปโอนเงิน (.jpg/.png)
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleUploadSlip}
+                disabled={uploading}
+                className="block w-full text-sm file:mr-3 file:py-2 file:px-4 file:rounded-md
+                           file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700
+                           file:cursor-pointer cursor-pointer"
+              />
+              {slipUrl && (
+                <img
+                  src={slipUrl}
+                  alt="slip"
+                  className="w-48 border border-green-100 rounded-md bg-white"
+                />
+              )}
             </div>
 
             <button
               onClick={handleConfirm}
               disabled={confirming}
-              className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white rounded-md py-2"
+              className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white rounded-md py-2 transition-colors"
             >
               {confirming ? "กำลังยืนยัน..." : "ยืนยัน"}
             </button>

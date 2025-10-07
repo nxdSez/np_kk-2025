@@ -2,10 +2,10 @@ const router = require("express").Router();
 const { authCheck } = require("../middleware/authCheck");
 const ctrl = require("../controllers/promptpay");
 
-// สร้าง QR PromptPay ตามยอดของออเดอร์
-router.post("/intent", authCheck, ctrl.createIntent);
+// ขอ QR จากตะกร้า (ยังไม่สร้าง order)
+router.post("/intent-from-cart", authCheck, ctrl.intentFromCart);
 
-// แนบสลิปหลังโอน
-router.post("/attach-slip", authCheck, ctrl.attachSlip);
+// แนบสลิป + ค่อยสร้าง Order/Payment
+router.post("/confirm", authCheck, ctrl.confirm);
 
 module.exports = router;

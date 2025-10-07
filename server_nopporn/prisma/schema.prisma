@@ -1,18 +1,144 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  // provider = "mysql"
   provider  = "postgresql"
-  url      = env("DATABASE_URL")
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String?
+  role      Role     @default(user)
+  name      String?
+  picture   String?
+  enabled   Boolean  @default(true)
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  carts     Cart[]
+  orders    Order[]
+}
+
+model Product {
+  id                 Int                  @id @default(autoincrement())
+  title              String
+  description        String
+  price              Float
+  sold               Int                  @default(0)
+  quantity           Int
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  categoryId         Int?
+  images             Image[]
+  orderItems         OrderItem[]
+  category           Category?            @relation(fields: [categoryId], references: [id])
+  ProductAssociation ProductAssociation[]
+  ProductAssocSource ProductAssociation[] @relation("AssocSource")
+  ProductAssocTarget ProductAssociation[] @relation("AssocTarget")
+  cartItems          ProductOnCart[]
+}
+
+model Order {
+  id              Int         @id @default(autoincrement())
+  total           Float
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  customerId      Int
+  status          OrderStatus @default(PENDING)
+  stripePaymentId String?
+  orderDate       DateTime?   @default(now())
+  customer        User        @relation(fields: [customerId], references: [id])
+  orderItems      OrderItem[]
+  payment   Payment? @relation("OrderPayment", fields: [paymentId], references: [id])
+  paymentId String?  @unique
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  quantity  Int
+  price     Float
+  counted   Boolean @default(false)
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model OrderLineLog {
+  id         Int      @id @default(autoincrement())
+  customerID String
+  productID  String
+  orderID    String
+  orderDate  DateTime
+  price      Float
+  frequency  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([customerID, productID], map: "customer_product_idx")
+  @@index([orderID], map: "order_idx")
+}
+
+model ProductAssociation {
+  id              Int      @id @default(autoincrement())
+  name            String
+  sourceProductId Int
+  targetProductId Int
+  weight          Int      @default(1)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  productId       Int?
+  Product         Product? @relation(fields: [productId], references: [id])
+  source          Product  @relation("AssocSource", fields: [sourceProductId], references: [id])
+  target          Product  @relation("AssocTarget", fields: [targetProductId], references: [id])
+
+  @@unique([sourceProductId, targetProductId])
+  @@index([sourceProductId])
+  @@index([targetProductId])
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+}
+
+model Cart {
+  id         Int             @id @default(autoincrement())
+  cartTotal  Float
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  customerId Int
+  customer   User            @relation(fields: [customerId], references: [id])
+  products   ProductOnCart[]
+}
+
+model ProductOnCart {
+  id        Int     @id @default(autoincrement())
+  cartId    Int
+  productId Int
+  count     Int
+  price     Float
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Image {
+  id         Int      @id @default(autoincrement())
+  asset_id   String
+  public_id  String
+  url        String
+  secure_url String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  productId  Int
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 enum Role {
@@ -27,134 +153,29 @@ enum OrderStatus {
   CANCELLED
 }
 
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String?
-  role      Role     @default(user)
-  name      String?
-  picture   String?
-  enabled   Boolean  @default(true)
-  address   String?
-  orders    Order[]
-  carts     Cart[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum PaymentMethod {
+  PROMPTPAY_MANUAL
+  STRIPE_CARD
 }
 
-model Product {
-  id                 Int                  @id @default(autoincrement())
-  title              String
-  description        String
-  price              Float
-  sold               Int                  @default(0)
-  quantity           Int
-  orderItems         OrderItem[]
-  cartItems          ProductOnCart[]
-  images             Image[]
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  category           Category?            @relation(fields: [categoryId], references: [id])
-  categoryId         Int?
-  ProductAssociation ProductAssociation[]
-  ProductAssocTarget ProductAssociation[] @relation("AssocTarget")
-  ProductAssocSource ProductAssociation[] @relation("AssocSource")
+enum PaymentStatus {
+  REQUIRES_ACTION
+  PENDING_REVIEW
+  SUCCEEDED
+  REJECTED
 }
 
-model Order {
-  id              Int         @id @default(autoincrement())
-  orderItems      OrderItem[]
-  total           Float
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  customer        User        @relation(fields: [customerId], references: [id])
-  customerId      Int
-  status          OrderStatus @default(PENDING)
-  stripePaymentId String? // optional
-  orderDate       DateTime?   @default(now())
-}
-
-model OrderItem {
-  id        Int     @id @default(autoincrement())
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  orderId   Int
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId Int
-  quantity  Int
-  price     Float // price per unit at time of purchase
-  counted   Boolean @default(false)
-}
-
-model OrderLineLog {
-  id         Int      @id @default(autoincrement())
-  customerID String
-  productID  String
-  orderID    String
-  orderDate  DateTime
-  price      Float
-  frequency  Int      @default(0)
-  createdAt  DateTime @default(now())
-
-  @@index([customerID, productID], name: "customer_product_idx")
-  @@index([orderID], name: "order_idx")
-}
-
-model ProductAssociation {
-  id              Int      @id @default(autoincrement())
-  name            String
-  sourceProductId Int
-  targetProductId Int
-  weight          Int      @default(1)
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  source    Product  @relation("AssocSource", fields: [sourceProductId], references: [id])
-  target    Product  @relation("AssocTarget", fields: [targetProductId], references: [id])
-  Product   Product? @relation(fields: [productId], references: [id])
-  productId Int?
-
-  @@unique([sourceProductId, targetProductId]) // กันซ้ำ
-  @@index([sourceProductId])
-  @@index([targetProductId])
-}
-
-model Category {
-  id        Int       @id @default(autoincrement())
-  name      String
-  products  Product[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-}
-
-model Cart {
-  id         Int             @id @default(autoincrement())
-  products   ProductOnCart[]
-  cartTotal  Float
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
-  customer   User            @relation(fields: [customerId], references: [id])
-  customerId Int
-}
-
-model ProductOnCart {
-  id        Int     @id @default(autoincrement())
-  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  cartId    Int
-  product   Product @relation(fields: [productId], references: [id])
-  productId Int
-  count     Int
-  price     Float
-}
-
-model Image {
-  id         Int      @id @default(autoincrement())
-  asset_id   String
-  public_id  String
-  url        String
-  secure_url String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId  Int
+model Payment {
+  id               String         @id @default(cuid())
+  method           PaymentMethod
+  status           PaymentStatus  @default(REQUIRES_ACTION)
+  amount           Int
+  currency         String         @default("THB")
+  slipUrl          String?
+  transactionRef   String?
+  promptpayPayload String?
+  paidAt           DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  order            Order?         @relation("OrderPayment")
 }

@@ -8,7 +8,7 @@ exports.payment = async (req, res) => {
         customerId: Number(req.user.id)
       }
     })
-    const stripe = require("stripe")("sk_test_51RxURmEgBfjIh6AVb3W0sVOx1UPIPHjdaAtiwn1lmF8dCCTfcwHbipqFBkIEAhK0qu12N35UenUWGYGScgOsGuou00qUvl8qae", {
+    const stripe = require("stripe")("sk_test_51RxURxIfIEt9sWay0UJxeWkUduw8ooZyCCgr4x3eNsyPeXH9GTiyftex0AVmJPm3JC4HkmEWurs3aOcjyzH7fBYa00iKQA6tfy", {
       apiVersion: "2025-07-30.basil",
     });
     const amountTHB = cart.cartTotal * 100 // Convert to cents

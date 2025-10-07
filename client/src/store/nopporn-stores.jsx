@@ -5,6 +5,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { listCategory } from "../api/Category";
 import { listProduct, searchFilters } from "../api/Product";
 import _, { update } from 'lodash'
+import { currentUser } from "../api/authen"
 
 const npStore = (set, get) => ({
   user: null,
@@ -62,6 +63,19 @@ const npStore = (set, get) => ({
       token: res.data.token,
     });
     return res;
+  },
+  loadMe: async () => {
+    const { token, user } = get()
+    if (!token) return
+    try {
+      const res = await currentUser(token)
+      const u = res?.data?.user
+      if (u) {
+        set({ user: {...user, ...u}})
+      }
+    } catch (err) {
+      console.log("loadMe error", err)
+    }
   },
   getCategory: async () => {
     try {

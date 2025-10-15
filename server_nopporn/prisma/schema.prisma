@@ -72,7 +72,7 @@ model OrderLineLog {
   customerID  String
   productID   String
   productName String?
-  orderID     Int?
+  orderID     String?
   quantity    Int?
   orderDate   DateTime
   price       Float

@@ -12,14 +12,16 @@ const toEnumString = (input) => {
 // เขียนแถว log สำหรับ analytics + mark counted กันนับซ้ำ (ทำใน transaction)
 async function logOrderAnalytics(tx, order) {
   const customerID = order.customer?.code ?? String(order.customerId);
-  const orderID    = String(order.id);
-  const orderDate  = order.updatedAt ?? new Date();
+  const orderID = String(order.id);
+  const orderDate = order.updatedAt ?? new Date();
 
   // นับเฉพาะรายการที่ยังไม่เคยนับ
   const itemsToCount = order.orderItems.filter((it) => !it.counted);
 
   for (const it of itemsToCount) {
     const productID = it.product?.code ?? String(it.productId);
+    const productName = it.product?.title ?? it.productName ?? "Unknown"
+    const quantity = Number(it.quantity ?? 1)
 
     // นับจำนวนครั้งก่อนหน้า (คีย์ = ลูกค้าคนนี้ซื้อสินค้านี้กี่ครั้งแล้ว)
     const prev = await tx.orderLineLog.count({
@@ -30,7 +32,9 @@ async function logOrderAnalytics(tx, order) {
       data: {
         customerID,
         productID,
+        productName,
         orderID,
+        quantity,
         orderDate,
         // ถ้าต้องการยอดต่อแถวแทนราคาต่อหน่วย เปลี่ยนเป็น: Number(it.price) * Number(it.quantity)
         price: Number(it.price),
